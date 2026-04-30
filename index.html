@@ -169,36 +169,34 @@
     </div>
 </div>
 
-<!-- 引入 Supabase 客户端库 -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- ⚠️ 只引入一次 Supabase 客户端库，使用稳定版本 -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
 
 <script>
-    // ==================== 配置 Supabase ====================
-const SUPABASE_URL = 'https://yihrrkvridiyfdiabkob.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_bra_sHf-dNI1DPaLo03WSw_s-KafG2-';
+    // ==================== Supabase 配置 ====================
+    const SUPABASE_URL = 'https://yihrrkvridiyfdiabkob.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_bra_sHf-dNI1DPaLo03WSw_s-KafG2-';
 
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     // ==================== 全局状态 ====================
-    let currentNodeId = null; // 当前操作哪个节点（数据库ID）
-    let currentMode = 'child'; // 'child' 或 'spouse'
-    let allMembers = [];      // 存放所有家族成员数据
+    let currentNodeId = null;
+    let currentMode = 'child';
+    let allMembers = [];
 
-    // 默认占位图（灰色 SVG Base64）
     const DEFAULT_PHOTO = 'data:image/svg+xml;base64,' +
         btoa('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="#e0e0e0"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#999" font-size="20">暂无照片</text></svg>');
 
-    // ==================== 数据加载与渲染 ====================
+    // ==================== 数据加载 ====================
     async function loadTreeData() {
         showLoading(true);
-        // 查询所有成员（按创建时间排序，确保顺序合理）
         const { data, error } = await supabase
             .from('family_members')
             .select('*')
             .order('created_at', { ascending: true });
 
         if (error) {
-            console.error('加载数据失败:', error);
+            console.error('加载失败:', error);
             alert('无法连接到数据库，请刷新重试。');
             showLoading(false);
             return;
@@ -209,15 +207,13 @@ const SUPABASE_ANON_KEY = 'sb_publishable_bra_sHf-dNI1DPaLo03WSw_s-KafG2-';
         showLoading(false);
     }
 
-    // 根据 parent_id 关系递归渲染树
     function renderTree() {
         const treeContainer = document.getElementById('familyTree');
         treeContainer.innerHTML = '';
 
-        // 找到根节点（parent_id 为 null）
         const roots = allMembers.filter(m => m.parent_id === null);
         if (roots.length === 0) {
-            treeContainer.innerHTML = '<p style="text-align:center;color:#999;">族谱数据为空，请先添加根成员。</p>';
+            treeContainer.innerHTML = '<p style="text-align:center;color:#999;">族谱数据为空</p>';
             return;
         }
 
@@ -253,7 +249,6 @@ const SUPABASE_ANON_KEY = 'sb_publishable_bra_sHf-dNI1DPaLo03WSw_s-KafG2-';
             </div>
         `;
 
-        // 查找直接子节点
         const children = allMembers.filter(m => m.parent_id === node.id);
         if (children.length > 0) {
             const childUl = document.createElement('ul');
@@ -270,7 +265,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_bra_sHf-dNI1DPaLo03WSw_s-KafG2-';
         document.getElementById('loadingIndicator').style.display = show ? 'block' : 'none';
     }
 
-    // ==================== 模态框操作 ====================
+    // ==================== 模态框 ====================
     const modal = document.getElementById('addModal');
     const modalTitle = document.getElementById('modalTitle');
     const errorMsg = document.getElementById('errorMsg');
@@ -290,7 +285,6 @@ const SUPABASE_ANON_KEY = 'sb_publishable_bra_sHf-dNI1DPaLo03WSw_s-KafG2-';
         currentNodeId = null;
     }
 
-    // 文件转 Base64
     function fileToBase64(file) {
         return new Promise((resolve) => {
             if (!file) return resolve(null);
@@ -301,80 +295,55 @@ const SUPABASE_ANON_KEY = 'sb_publishable_bra_sHf-dNI1DPaLo03WSw_s-KafG2-';
     }
 
     async function submitForm() {
-        const nameInput = document.getElementById('newName');
-        const name = nameInput.value.trim();
+        const name = document.getElementById('newName').value.trim();
         if (!name) {
-            showError('请输入姓名');
+            errorMsg.textContent = '请输入姓名';
+            errorMsg.style.display = 'block';
             return;
         }
 
         const photoFile = document.getElementById('newPhoto').files[0];
         let photoUrl = null;
         if (photoFile) {
-            // 简单压缩提示：如果图片 > 200KB，建议用户压缩，此处不做自动压缩
-            if (photoFile.size > 1024 * 1024) {
-                if (!confirm('图片大于1MB，可能导致保存失败。建议缩小图片。是否继续？')) return;
-            }
             photoUrl = await fileToBase64(photoFile);
         }
 
-        // 根据模式调用不同处理
         if (currentMode === 'child') {
-            await addChild(currentNodeId, name, photoUrl);
+            const { error } = await supabase.from('family_members').insert({
+                parent_id: currentNodeId,
+                name: name,
+                photo_url: photoUrl || DEFAULT_PHOTO,
+                spouse_name: null,
+                spouse_photo_url: null
+            });
+
+            if (error) {
+                errorMsg.textContent = '添加失败：' + error.message;
+                errorMsg.style.display = 'block';
+                return;
+            }
         } else if (currentMode === 'spouse') {
-            await addSpouse(currentNodeId, name, photoUrl);
-        }
-    }
+            const { error } = await supabase
+                .from('family_members')
+                .update({
+                    spouse_name: name,
+                    spouse_photo_url: photoUrl || null
+                })
+                .eq('id', currentNodeId);
 
-    async function addChild(parentId, name, photoUrl) {
-        const newMember = {
-            parent_id: parentId,
-            name: name,
-            photo_url: photoUrl || DEFAULT_PHOTO,
-            spouse_name: null,
-            spouse_photo_url: null
-        };
-
-        const { error } = await supabase.from('family_members').insert(newMember);
-        if (error) {
-            showError('添加失败：' + error.message);
-            return;
-        }
-
-        closeModal();
-        await loadTreeData(); // 重新加载最新数据
-    }
-
-    async function addSpouse(memberId, spouseName, spousePhotoUrl) {
-        // 更新该成员的配偶信息
-        const updateData = {
-            spouse_name: spouseName,
-            spouse_photo_url: spousePhotoUrl || null
-        };
-
-        const { error } = await supabase
-            .from('family_members')
-            .update(updateData)
-            .eq('id', memberId);
-
-        if (error) {
-            showError('添加配偶失败：' + error.message);
-            return;
+            if (error) {
+                errorMsg.textContent = '添加配偶失败：' + error.message;
+                errorMsg.style.display = 'block';
+                return;
+            }
         }
 
         closeModal();
         await loadTreeData();
     }
 
-    function showError(msg) {
-        errorMsg.textContent = msg;
-        errorMsg.style.display = 'block';
-    }
-
-    // 页面加载时自动载入数据
-    window.addEventListener('DOMContentLoaded', () => {
-        loadTreeData();
-    });
+    // 页面启动
+    window.addEventListener('DOMContentLoaded', loadTreeData);
 </script>
 </body>
 </html>
