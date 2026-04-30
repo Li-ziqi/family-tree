@@ -5,19 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>家族传承 | 线上族谱</title>
     <style>
+        /* …… 此处省略样式，和前面给的完整版一模一样 …… */
         :root {
             --primary-color: #2c3e50;
             --accent-color: #d4af37;
             --card-bg: rgba(255, 255, 255, 0.85);
         }
-
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
             margin: 0; padding: 0; min-height: 100vh;
             color: var(--primary-color);
         }
-
         .header {
             text-align: center; padding: 40px 20px 10px;
         }
@@ -149,7 +148,6 @@
     <div class="tree" id="familyTree"></div>
 </div>
 
-<!-- 通用模态框 -->
 <div class="modal-overlay" id="addModal">
     <div class="modal">
         <h2 id="modalTitle">添加成员</h2>
@@ -169,14 +167,13 @@
     </div>
 </div>
 
-<!-- ⚠️ 只引入一次 Supabase 客户端库，使用稳定版本 -->
+<!-- 引入 Supabase 客户端库 (稳定版本) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
 
 <script>
     // ==================== Supabase 配置 ====================
     const SUPABASE_URL = 'https://yihrrkvridiyfdiabkob.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_bra_sHf-dNI1DPaLo03WSw_s-KafG2-';
-
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     // ==================== 全局状态 ====================
@@ -184,10 +181,10 @@
     let currentMode = 'child';
     let allMembers = [];
 
-    const DEFAULT_PHOTO = 'data:image/svg+xml;base64,' +
-        btoa('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="#e0e0e0"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#999" font-size="20">暂无照片</text></svg>');
+    // 使用预编码的 Base64 占位图（英文 "No Photo"），避免 btoa 中文报错
+    const DEFAULT_PHOTO = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2UwZTBlMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTk5IiBmb250LXNpemU9IjIwIj5ObyBQaG90bzwvdGV4dD48L3N2Zz4=';
 
-    // ==================== 数据加载 ====================
+    // ==================== 数据加载与渲染 ====================
     async function loadTreeData() {
         showLoading(true);
         const { data, error } = await supabase
@@ -265,7 +262,7 @@
         document.getElementById('loadingIndicator').style.display = show ? 'block' : 'none';
     }
 
-    // ==================== 模态框 ====================
+    // ==================== 模态框操作 ====================
     const modal = document.getElementById('addModal');
     const modalTitle = document.getElementById('modalTitle');
     const errorMsg = document.getElementById('errorMsg');
@@ -316,7 +313,6 @@
                 spouse_name: null,
                 spouse_photo_url: null
             });
-
             if (error) {
                 errorMsg.textContent = '添加失败：' + error.message;
                 errorMsg.style.display = 'block';
@@ -330,7 +326,6 @@
                     spouse_photo_url: photoUrl || null
                 })
                 .eq('id', currentNodeId);
-
             if (error) {
                 errorMsg.textContent = '添加配偶失败：' + error.message;
                 errorMsg.style.display = 'block';
@@ -342,7 +337,6 @@
         await loadTreeData();
     }
 
-    // 页面启动
     window.addEventListener('DOMContentLoaded', loadTreeData);
 </script>
 </body>
