@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>家族传承 | 线上族谱</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #d4af37;
+            --card-bg: rgba(255, 255, 255, 0.85);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+            margin: 0; padding: 0; min-height: 100vh;
+            color: var(--primary-color);
+        }
+
+        .header {
+            text-align: center; padding: 40px 20px 10px;
+        }
+        .header h1 { font-size: 28px; font-weight: 300; letter-spacing: 4px; margin: 0; }
+        .header p { font-size: 14px; color: #888; margin: 8px 0 20px; }
+        .loading-text { color: #aaa; font-size: 14px; }
+
+        .tree-container {
+            width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;
+            padding: 20px 50px 100px; box-sizing: border-box;
+            scrollbar-width: none;
+        }
+        .tree-container::-webkit-scrollbar { display: none; }
+
+        .tree ul {
+            padding-top: 30px; position: relative;
+            display: flex; justify-content: center; padding-left: 0;
+        }
+        .tree li {
+            text-align: center; list-style-type: none; position: relative;
+            padding: 30px 15px 0; white-space: nowrap;
+        }
+        .tree li::before, .tree li::after {
+            content: ''; position: absolute; top: 0; right: 50%;
+            border-top: 1.5px solid #bdc3c7; width: 50%; height: 30px;
+        }
+        .tree li::after {
+            right: auto; left: 50%;
+            border-left: 1.5px solid #bdc3c7;
+        }
+        .tree li:only-child::after, .tree li:only-child::before { display: none; }
+        .tree li:only-child { padding-top: 0; }
+        .tree li:first-child::before, .tree li:last-child::after { border: 0 none; }
+        .tree li:last-child::before {
+            border-right: 1.5px solid #bdc3c7;
+            border-radius: 0 8px 0 0;
+        }
+        .tree li:first-child::after { border-radius: 8px 0 0 0; }
+        .tree ul ul::before {
+            content: ''; position: absolute; top: 0; left: 50%;
+            border-left: 1.5px solid #bdc3c7;
+            width: 0; height: 30px; transform: translateX(-50%);
+        }
+
+        .person {
+            position: relative;
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.5);
+            padding: 12px;
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.06);
+            transition: all 0.3s; min-width: 100px;
+        }
+        .person:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            border-color: rgba(212,175,55,0.3);
+        }
+        .person img { width: 80px; height: 106px; object-fit: cover; border-radius: 10px; background: #eee; }
+        .spouse img { width: 50px; height: 66px; margin-top: 4px; border-radius: 8px; object-fit: cover; }
+        .person .name { margin-top: 12px; font-size: 15px; font-weight: 500; letter-spacing: 1px; }
+        .spouse-name { font-size: 12px; color: #666; margin-top: 4px; border-top: 1px dashed #ddd; padding-top: 6px; width: 100%; }
+
+        .action-btns { display: flex; gap: 8px; margin-top: 12px; }
+        .add-btn, .spouse-btn {
+            background: #fff; color: var(--accent-color);
+            border: 1px solid #eaeaea;
+            width: 30px; height: 30px; border-radius: 50%;
+            font-size: 18px; line-height: 28px;
+            cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+            transition: all 0.2s;
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0;
+        }
+        @media (hover: hover) { .person:hover .add-btn, .person:hover .spouse-btn { opacity: 1; } }
+        @media (max-width: 768px) {
+            .add-btn, .spouse-btn { opacity: 1; width: 28px; height: 28px; }
+            .person img { width: 70px; height: 93px; }
+            .spouse img { width: 45px; height: 60px; }
+            .tree li { padding: 20px 8px 0; }
+        }
+        .add-btn:hover, .spouse-btn:hover { background: var(--accent-color); color: #fff; transform: scale(1.1); }
+
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.4); backdrop-filter: blur(5px);
+            display: none; justify-content: center; align-items: center;
+            z-index: 1000; opacity: 0; transition: opacity 0.3s;
+        }
+        .modal {
+            background: #fff; padding: 30px; border-radius: 20px;
+            width: 90%; max-width: 350px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.2);
+            transform: translateY(20px); transition: transform 0.3s;
+        }
+        .modal h2 { margin: 0 0 20px; font-size: 20px; font-weight: 400; text-align: center; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-size: 13px; color: #666; }
+        .form-group input[type="text"] {
+            width: 100%; padding: 12px; border: 1px solid #ddd;
+            border-radius: 8px; box-sizing: border-box; font-size: 14px;
+            outline: none;
+        }
+        .form-group input[type="text"]:focus { border-color: var(--accent-color); }
+        .form-group input[type="file"] { width: 100%; font-size: 13px; }
+        .modal-btns { display: flex; gap: 10px; justify-content: center; }
+        .btn { padding: 10px 20px; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; }
+        .btn-cancel { background: #f0f0f0; color: #333; }
+        .btn-submit { background: var(--primary-color); color: #fff; }
+        .btn-submit:hover { background: var(--accent-color); }
+        .modal-overlay.active { display: flex; opacity: 1; }
+        .modal-overlay.active .modal { transform: translateY(0); }
+        .error-text { color: #c0392b; font-size: 13px; display: none; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>家族传承</h1>
+    <p>线上协作族谱 · 数据永久保存</p>
+    <div class="loading-text" id="loadingIndicator">加载中...</div>
+</div>
+
+<div class="tree-container">
+    <div class="tree" id="familyTree"></div>
+</div>
+
+<!-- 通用模态框 -->
+<div class="modal-overlay" id="addModal">
+    <div class="modal">
+        <h2 id="modalTitle">添加成员</h2>
+        <div class="form-group">
+            <label>姓名</label>
+            <input type="text" id="newName" placeholder="请输入姓名">
+        </div>
+        <div class="form-group">
+            <label>上传证件照</label>
+            <input type="file" id="newPhoto" accept="image/*">
+        </div>
+        <div class="modal-btns">
+            <button class="btn btn-cancel" onclick="closeModal()">取消</button>
+            <button class="btn btn-submit" onclick="submitForm()">确认添加</button>
+        </div>
+        <p class="error-text" id="errorMsg"></p>
+    </div>
+</div>
+
+<!-- 引入 Supabase 客户端库 -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+    // ==================== 配置 Supabase ====================
+const SUPABASE_URL = 'https://yihrrkvridiyfdiabkob.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_bra_sHf-dNI1DPaLo03WSw_s-KafG2-';
+
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // ==================== 全局状态 ====================
+    let currentNodeId = null; // 当前操作哪个节点（数据库ID）
+    let currentMode = 'child'; // 'child' 或 'spouse'
+    let allMembers = [];      // 存放所有家族成员数据
+
+    // 默认占位图（灰色 SVG Base64）
+    const DEFAULT_PHOTO = 'data:image/svg+xml;base64,' +
+        btoa('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="#e0e0e0"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#999" font-size="20">暂无照片</text></svg>');
+
+    // ==================== 数据加载与渲染 ====================
+    async function loadTreeData() {
+        showLoading(true);
+        // 查询所有成员（按创建时间排序，确保顺序合理）
+        const { data, error } = await supabase
+            .from('family_members')
+            .select('*')
+            .order('created_at', { ascending: true });
+
+        if (error) {
+            console.error('加载数据失败:', error);
+            alert('无法连接到数据库，请刷新重试。');
+            showLoading(false);
+            return;
+        }
+
+        allMembers = data || [];
+        renderTree();
+        showLoading(false);
+    }
+
+    // 根据 parent_id 关系递归渲染树
+    function renderTree() {
+        const treeContainer = document.getElementById('familyTree');
+        treeContainer.innerHTML = '';
+
+        // 找到根节点（parent_id 为 null）
+        const roots = allMembers.filter(m => m.parent_id === null);
+        if (roots.length === 0) {
+            treeContainer.innerHTML = '<p style="text-align:center;color:#999;">族谱数据为空，请先添加根成员。</p>';
+            return;
+        }
+
+        const rootUl = document.createElement('ul');
+        roots.forEach(root => {
+            rootUl.appendChild(buildNodeDOM(root));
+        });
+        treeContainer.appendChild(rootUl);
+    }
+
+    function buildNodeDOM(node) {
+        const li = document.createElement('li');
+        const photo = node.photo_url || DEFAULT_PHOTO;
+
+        let spouseHTML = '';
+        if (node.spouse_name) {
+            spouseHTML = `
+                <div class="spouse-name">
+                    配：${node.spouse_name}
+                    ${node.spouse_photo_url ? `<br><img src="${node.spouse_photo_url}" alt="配偶">` : ''}
+                </div>`;
+        }
+
+        li.innerHTML = `
+            <div class="person">
+                <img src="${photo}" alt="${node.name}">
+                <span class="name">${node.name}</span>
+                ${spouseHTML}
+                <div class="action-btns">
+                    <div class="add-btn" onclick="openModal(${node.id}, 'child')" title="添加子嗣">+</div>
+                    <div class="spouse-btn" onclick="openModal(${node.id}, 'spouse')" title="添加配偶">👰</div>
+                </div>
+            </div>
+        `;
+
+        // 查找直接子节点
+        const children = allMembers.filter(m => m.parent_id === node.id);
+        if (children.length > 0) {
+            const childUl = document.createElement('ul');
+            children.forEach(child => {
+                childUl.appendChild(buildNodeDOM(child));
+            });
+            li.appendChild(childUl);
+        }
+
+        return li;
+    }
+
+    function showLoading(show) {
+        document.getElementById('loadingIndicator').style.display = show ? 'block' : 'none';
+    }
+
+    // ==================== 模态框操作 ====================
+    const modal = document.getElementById('addModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const errorMsg = document.getElementById('errorMsg');
+
+    function openModal(nodeId, mode) {
+        currentNodeId = nodeId;
+        currentMode = mode;
+        modalTitle.textContent = mode === 'child' ? '添加子嗣' : '添加配偶';
+        errorMsg.style.display = 'none';
+        modal.classList.add('active');
+    }
+
+    function closeModal() {
+        modal.classList.remove('active');
+        document.getElementById('newName').value = '';
+        document.getElementById('newPhoto').value = '';
+        currentNodeId = null;
+    }
+
+    // 文件转 Base64
+    function fileToBase64(file) {
+        return new Promise((resolve) => {
+            if (!file) return resolve(null);
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.readAsDataURL(file);
+        });
+    }
+
+    async function submitForm() {
+        const nameInput = document.getElementById('newName');
+        const name = nameInput.value.trim();
+        if (!name) {
+            showError('请输入姓名');
+            return;
+        }
+
+        const photoFile = document.getElementById('newPhoto').files[0];
+        let photoUrl = null;
+        if (photoFile) {
+            // 简单压缩提示：如果图片 > 200KB，建议用户压缩，此处不做自动压缩
+            if (photoFile.size > 1024 * 1024) {
+                if (!confirm('图片大于1MB，可能导致保存失败。建议缩小图片。是否继续？')) return;
+            }
+            photoUrl = await fileToBase64(photoFile);
+        }
+
+        // 根据模式调用不同处理
+        if (currentMode === 'child') {
+            await addChild(currentNodeId, name, photoUrl);
+        } else if (currentMode === 'spouse') {
+            await addSpouse(currentNodeId, name, photoUrl);
+        }
+    }
+
+    async function addChild(parentId, name, photoUrl) {
+        const newMember = {
+            parent_id: parentId,
+            name: name,
+            photo_url: photoUrl || DEFAULT_PHOTO,
+            spouse_name: null,
+            spouse_photo_url: null
+        };
+
+        const { error } = await supabase.from('family_members').insert(newMember);
+        if (error) {
+            showError('添加失败：' + error.message);
+            return;
+        }
+
+        closeModal();
+        await loadTreeData(); // 重新加载最新数据
+    }
+
+    async function addSpouse(memberId, spouseName, spousePhotoUrl) {
+        // 更新该成员的配偶信息
+        const updateData = {
+            spouse_name: spouseName,
+            spouse_photo_url: spousePhotoUrl || null
+        };
+
+        const { error } = await supabase
+            .from('family_members')
+            .update(updateData)
+            .eq('id', memberId);
+
+        if (error) {
+            showError('添加配偶失败：' + error.message);
+            return;
+        }
+
+        closeModal();
+        await loadTreeData();
+    }
+
+    function showError(msg) {
+        errorMsg.textContent = msg;
+        errorMsg.style.display = 'block';
+    }
+
+    // 页面加载时自动载入数据
+    window.addEventListener('DOMContentLoaded', () => {
+        loadTreeData();
+    });
+</script>
+</body>
+</html>
