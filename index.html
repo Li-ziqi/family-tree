@@ -2,21 +2,26 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>家族传承 | 线上族谱</title>
     <style>
-        /* …… 此处省略样式，和前面给的完整版一模一样 …… */
         :root {
             --primary-color: #2c3e50;
             --accent-color: #d4af37;
             --card-bg: rgba(255, 255, 255, 0.85);
+            --danger-color: #c0392b;
         }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
             margin: 0; padding: 0; min-height: 100vh;
             color: var(--primary-color);
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
         }
+
         .header {
             text-align: center; padding: 40px 20px 10px;
         }
@@ -38,6 +43,7 @@
         .tree li {
             text-align: center; list-style-type: none; position: relative;
             padding: 30px 15px 0; white-space: nowrap;
+            transition: all 0.2s;
         }
         .tree li::before, .tree li::after {
             content: ''; position: absolute; top: 0; right: 50%;
@@ -61,6 +67,14 @@
             width: 0; height: 30px; transform: translateX(-50%);
         }
 
+        /* 家庭节点容器 */
+        .family-node {
+            display: inline-flex;
+            align-items: center;
+            gap: 16px;
+            position: relative;
+        }
+
         .person {
             position: relative;
             background: var(--card-bg);
@@ -72,7 +86,9 @@
             align-items: center;
             border-radius: 16px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.06);
-            transition: all 0.3s; min-width: 100px;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            min-width: 100px;
+            cursor: pointer;
         }
         .person:hover {
             transform: translateY(-6px);
@@ -80,11 +96,21 @@
             border-color: rgba(212,175,55,0.3);
         }
         .person img { width: 80px; height: 106px; object-fit: cover; border-radius: 10px; background: #eee; }
-        .spouse img { width: 50px; height: 66px; margin-top: 4px; border-radius: 8px; object-fit: cover; }
         .person .name { margin-top: 12px; font-size: 15px; font-weight: 500; letter-spacing: 1px; }
-        .spouse-name { font-size: 12px; color: #666; margin-top: 4px; border-top: 1px dashed #ddd; padding-top: 6px; width: 100%; }
 
-        .action-btns { display: flex; gap: 8px; margin-top: 12px; }
+        /* 子女信息 */
+        .children-info {
+            margin-top: 6px;
+            font-size: 12px;
+            color: #777;
+            border-top: 1px dashed #ddd;
+            padding-top: 6px;
+            max-width: 140px;
+            white-space: normal;
+            word-break: break-all;
+        }
+
+        .action-btns { display: flex; gap: 8px; margin-top: 10px; }
         .add-btn, .spouse-btn {
             background: #fff; color: var(--accent-color);
             border: 1px solid #eaeaea;
@@ -95,15 +121,52 @@
             display: flex; align-items: center; justify-content: center;
             opacity: 0;
         }
-        @media (hover: hover) { .person:hover .add-btn, .person:hover .spouse-btn { opacity: 1; } }
+        @media (hover: hover) {
+            .person:hover .add-btn,
+            .person:hover .spouse-btn { opacity: 1; }
+        }
         @media (max-width: 768px) {
             .add-btn, .spouse-btn { opacity: 1; width: 28px; height: 28px; }
             .person img { width: 70px; height: 93px; }
-            .spouse img { width: 45px; height: 60px; }
             .tree li { padding: 20px 8px 0; }
         }
-        .add-btn:hover, .spouse-btn:hover { background: var(--accent-color); color: #fff; transform: scale(1.1); }
+        .add-btn:hover, .spouse-btn:hover {
+            background: var(--accent-color); color: #fff; transform: scale(1.1);
+        }
 
+        /* 删除按钮 */
+        .delete-btn {
+            position: absolute;
+            top: -36px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--danger-color);
+            color: white;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(192,57,43,0.3);
+            display: none;
+            z-index: 10;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
+        }
+        .delete-btn:hover { background: #e74c3c; transform: translateX(-50%) scale(1.1); }
+        .delete-btn.show { display: flex; }
+
+        /* 配偶卡片独立样式 */
+        .spouse-person {
+            opacity: 0.95;
+            border-color: rgba(212,175,55,0.2);
+        }
+        .spouse-person img { width: 63px; height: 84px; border-radius: 10px; background: #eee; }
+        .spouse-person .name { font-size: 13px; margin-top: 8px; }
+
+        /* 模态框 */
         .modal-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0,0,0,0.4); backdrop-filter: blur(5px);
@@ -126,7 +189,25 @@
         }
         .form-group input[type="text"]:focus { border-color: var(--accent-color); }
         .form-group input[type="file"] { width: 100%; font-size: 13px; }
-        .modal-btns { display: flex; gap: 10px; justify-content: center; }
+        .gender-select {
+            display: flex;
+            gap: 10px;
+        }
+        .gender-select button {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            background: white;
+            cursor: pointer;
+            font-size: 16px;
+            transition: 0.2s;
+        }
+        .gender-select button.active {
+            border-color: var(--accent-color);
+            background: rgba(212,175,55,0.1);
+        }
+        .modal-btns { display: flex; gap: 10px; justify-content: center; margin-top: 20px; }
         .btn { padding: 10px 20px; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; }
         .btn-cancel { background: #f0f0f0; color: #333; }
         .btn-submit { background: var(--primary-color); color: #fff; }
@@ -148,12 +229,21 @@
     <div class="tree" id="familyTree"></div>
 </div>
 
+<!-- 添加后代/配偶模态框 -->
 <div class="modal-overlay" id="addModal">
     <div class="modal">
         <h2 id="modalTitle">添加成员</h2>
         <div class="form-group">
             <label>姓名</label>
             <input type="text" id="newName" placeholder="请输入姓名">
+        </div>
+        <!-- 性别选择（仅子嗣模式显示） -->
+        <div class="form-group" id="genderGroup" style="display:none;">
+            <label>性别</label>
+            <div class="gender-select">
+                <button type="button" id="genderMale" onclick="setGender('male', this)">男</button>
+                <button type="button" id="genderFemale" onclick="setGender('female', this)">女</button>
+            </div>
         </div>
         <div class="form-group">
             <label>上传证件照</label>
@@ -167,7 +257,7 @@
     </div>
 </div>
 
-<!-- 引入 Supabase 客户端库 (稳定版本) -->
+<!-- Supabase 客户端 -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
 
 <script>
@@ -178,11 +268,75 @@
 
     // ==================== 全局状态 ====================
     let currentNodeId = null;
-    let currentMode = 'child';
+    let currentMode = 'child';   // 'child' 或 'spouse'
+    let selectedGender = null;  // 子嗣性别
     let allMembers = [];
 
-    // 使用预编码的 Base64 占位图（英文 "No Photo"），避免 btoa 中文报错
-    const DEFAULT_PHOTO = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2UwZTBlMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTk5IiBmb250LXNpemU9IjIwIj5ObyBQaG90bzwvdGV4dD48L3N2Zz4=';
+    // 默认头像（换成仓库里的图片，如果不存在则回退到英文占位图）
+    const DEFAULT_PHOTO = 'default-avatar.png';
+
+    // ==================== 长按删除逻辑 ====================
+    let longPressTimer = null;
+    let deleteTargetId = null;
+    let deleteBtnElement = null;
+
+    function startLongPress(memberId, personElement) {
+        // 清除之前的定时器
+        clearLongPress();
+        deleteTargetId = memberId;
+        longPressTimer = setTimeout(() => {
+            // 显示删除按钮
+            showDeleteBtn(personElement);
+        }, 600);
+    }
+
+    function clearLongPress() {
+        if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+        }
+    }
+
+    function showDeleteBtn(personElement) {
+        // 隐藏其他删除按钮
+        document.querySelectorAll('.delete-btn').forEach(btn => btn.classList.remove('show'));
+        // 在当前卡片上方创建或显示删除按钮
+        let btn = personElement.querySelector('.delete-btn');
+        if (!btn) {
+            btn = document.createElement('div');
+            btn.className = 'delete-btn';
+            btn.innerHTML = '✕';
+            btn.title = '删除此成员及其所有后代';
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (confirm('确定要删除该成员及其所有后代吗？此操作不可恢复。')) {
+                    deleteMember(deleteTargetId);
+                }
+                btn.classList.remove('show');
+            });
+            personElement.appendChild(btn);
+        }
+        btn.classList.add('show');
+        deleteBtnElement = btn;
+        // 5秒后自动隐藏
+        setTimeout(() => {
+            if (btn) btn.classList.remove('show');
+        }, 5000);
+    }
+
+    // 点击页面其他地方隐藏删除按钮
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.person')) {
+            document.querySelectorAll('.delete-btn').forEach(btn => btn.classList.remove('show'));
+        }
+    });
+
+    // ==================== 性别选择 ====================
+    function setGender(gender, btn) {
+        selectedGender = gender;
+        document.querySelectorAll('.gender-select button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    }
 
     // ==================== 数据加载与渲染 ====================
     async function loadTreeData() {
@@ -198,10 +352,106 @@
             showLoading(false);
             return;
         }
-
         allMembers = data || [];
         renderTree();
         showLoading(false);
+    }
+
+    // 根据后代资料生成称号 (如 “长子: 小明”)
+    function getChildTitle(member) {
+        const children = allMembers.filter(m => m.parent_id === member.id);
+        if (children.length === 0) return '';
+        // 按创建时间排序（作为出生顺序）
+        children.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+        const titles = children.map((child, index) => {
+            const order = ['一', '二', '三', '四', '五'][index] || (index+1);
+            const genderChar = child.gender === 'male' ? '子' : '女';
+            return `${order}${genderChar}：${child.name}`;
+        });
+        return titles.join('，');
+    }
+
+    // 获取成员的配偶性别（根据第一个后代推断）
+    function getSpouseGender(memberId) {
+        const children = allMembers.filter(m => m.parent_id === memberId);
+        if (children.length > 0) {
+            // 找第一个后代（按创建时间）
+            children.sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
+            return children[0].gender === 'male' ? 'female' : 'male';
+        }
+        // 没有后代时，默认配偶为女（假设主成员为男）
+        return 'female';
+    }
+
+    // 构建家庭节点（主卡片+配偶卡片）
+    function buildFamilyNodeDOM(member) {
+        const nodeDiv = document.createElement('div');
+        nodeDiv.className = 'family-node';
+
+        // 主卡片
+        const mainPerson = document.createElement('div');
+        mainPerson.className = 'person';
+        mainPerson.setAttribute('data-id', member.id);
+        const photo = member.photo_url || DEFAULT_PHOTO;
+        mainPerson.innerHTML = `
+            <img src="${photo}" alt="${member.name}" onerror="this.src='${DEFAULT_PHOTO}'">
+            <span class="name">${member.name}</span>
+            <div class="action-btns">
+                <div class="add-btn" onclick="event.stopPropagation(); openModal(${member.id}, 'child')" title="添加子嗣">+</div>
+                <div class="spouse-btn" onclick="event.stopPropagation(); openModal(${member.id}, 'spouse')" title="添加配偶">👰</div>
+            </div>
+        `;
+
+        // 长按事件
+        mainPerson.addEventListener('mousedown', (e) => {
+            startLongPress(member.id, mainPerson);
+        });
+        mainPerson.addEventListener('mouseup', clearLongPress);
+        mainPerson.addEventListener('mouseleave', clearLongPress);
+        mainPerson.addEventListener('touchstart', (e) => {
+            startLongPress(member.id, mainPerson);
+        }, {passive: true});
+        mainPerson.addEventListener('touchend', clearLongPress);
+        mainPerson.addEventListener('touchmove', clearLongPress);
+
+        nodeDiv.appendChild(mainPerson);
+
+        // 配偶卡片
+        if (member.spouse_name) {
+            const spouseCard = document.createElement('div');
+            spouseCard.className = 'person spouse-person';
+            const spousePhoto = member.spouse_photo_url || DEFAULT_PHOTO;
+            const spouseGender = getSpouseGender(member.id);
+            const spouseLabel = spouseGender === 'female' ? '妻' : '夫';
+            spouseCard.innerHTML = `
+                <img src="${spousePhoto}" alt="${member.spouse_name}" onerror="this.src='${DEFAULT_PHOTO}'">
+                <span class="name">${member.spouse_name}</span>
+                <div style="font-size:11px;color:#aaa;">${spouseLabel}</div>
+            `;
+            // 配偶也可以长按删除（删除配偶关系）
+            spouseCard.addEventListener('mousedown', (e) => {
+                startLongPress(member.id, spouseCard);
+            });
+            spouseCard.addEventListener('mouseup', clearLongPress);
+            spouseCard.addEventListener('mouseleave', clearLongPress);
+            spouseCard.addEventListener('touchstart', (e) => {
+                startLongPress(member.id, spouseCard);
+            }, {passive: true});
+            spouseCard.addEventListener('touchend', clearLongPress);
+            spouseCard.addEventListener('touchmove', clearLongPress);
+            nodeDiv.appendChild(spouseCard);
+        }
+
+        // 子女信息显示在主卡片下方（放在family-node内部？还是单独？为了布局，放在主卡片底部）
+        const childrenTitle = getChildTitle(member);
+        if (childrenTitle) {
+            const childrenInfo = document.createElement('div');
+            childrenInfo.className = 'children-info';
+            childrenInfo.textContent = childrenTitle;
+            mainPerson.appendChild(childrenInfo);
+        }
+
+        return nodeDiv;
     }
 
     function renderTree() {
@@ -221,32 +471,12 @@
         treeContainer.appendChild(rootUl);
     }
 
-    function buildNodeDOM(node) {
+    function buildNodeDOM(member) {
         const li = document.createElement('li');
-        const photo = node.photo_url || DEFAULT_PHOTO;
+        li.appendChild(buildFamilyNodeDOM(member));
 
-        let spouseHTML = '';
-        if (node.spouse_name) {
-            spouseHTML = `
-                <div class="spouse-name">
-                    配：${node.spouse_name}
-                    ${node.spouse_photo_url ? `<br><img src="${node.spouse_photo_url}" alt="配偶">` : ''}
-                </div>`;
-        }
-
-        li.innerHTML = `
-            <div class="person">
-                <img src="${photo}" alt="${node.name}">
-                <span class="name">${node.name}</span>
-                ${spouseHTML}
-                <div class="action-btns">
-                    <div class="add-btn" onclick="openModal(${node.id}, 'child')" title="添加子嗣">+</div>
-                    <div class="spouse-btn" onclick="openModal(${node.id}, 'spouse')" title="添加配偶">👰</div>
-                </div>
-            </div>
-        `;
-
-        const children = allMembers.filter(m => m.parent_id === node.id);
+        // 递归子节点
+        const children = allMembers.filter(m => m.parent_id === member.id);
         if (children.length > 0) {
             const childUl = document.createElement('ul');
             children.forEach(child => {
@@ -254,7 +484,6 @@
             });
             li.appendChild(childUl);
         }
-
         return li;
     }
 
@@ -265,12 +494,22 @@
     // ==================== 模态框操作 ====================
     const modal = document.getElementById('addModal');
     const modalTitle = document.getElementById('modalTitle');
+    const genderGroup = document.getElementById('genderGroup');
     const errorMsg = document.getElementById('errorMsg');
 
     function openModal(nodeId, mode) {
         currentNodeId = nodeId;
         currentMode = mode;
-        modalTitle.textContent = mode === 'child' ? '添加子嗣' : '添加配偶';
+        selectedGender = null; // 重置
+        if (mode === 'child') {
+            modalTitle.textContent = '添加后代';
+            genderGroup.style.display = 'block';
+            // 清除性别选择样式
+            document.querySelectorAll('.gender-select button').forEach(b => b.classList.remove('active'));
+        } else {
+            modalTitle.textContent = '添加配偶';
+            genderGroup.style.display = 'none';
+        }
         errorMsg.style.display = 'none';
         modal.classList.add('active');
     }
@@ -294,8 +533,11 @@
     async function submitForm() {
         const name = document.getElementById('newName').value.trim();
         if (!name) {
-            errorMsg.textContent = '请输入姓名';
-            errorMsg.style.display = 'block';
+            showError('请输入姓名');
+            return;
+        }
+        if (currentMode === 'child' && !selectedGender) {
+            showError('请选择性别');
             return;
         }
 
@@ -309,16 +551,17 @@
             const { error } = await supabase.from('family_members').insert({
                 parent_id: currentNodeId,
                 name: name,
-                photo_url: photoUrl || DEFAULT_PHOTO,
+                photo_url: photoUrl || null,
+                gender: selectedGender,
                 spouse_name: null,
                 spouse_photo_url: null
             });
             if (error) {
-                errorMsg.textContent = '添加失败：' + error.message;
-                errorMsg.style.display = 'block';
+                showError('添加失败：' + error.message);
                 return;
             }
         } else if (currentMode === 'spouse') {
+            // 更新配偶信息
             const { error } = await supabase
                 .from('family_members')
                 .update({
@@ -327,14 +570,44 @@
                 })
                 .eq('id', currentNodeId);
             if (error) {
-                errorMsg.textContent = '添加配偶失败：' + error.message;
-                errorMsg.style.display = 'block';
+                showError('添加配偶失败：' + error.message);
                 return;
             }
         }
 
         closeModal();
         await loadTreeData();
+    }
+
+    function showError(msg) {
+        errorMsg.textContent = msg;
+        errorMsg.style.display = 'block';
+    }
+
+    // ==================== 删除成员 ====================
+    async function deleteMember(memberId) {
+        // 递归收集所有后代ID
+        function getDescendantIds(pid) {
+            let ids = [];
+            const children = allMembers.filter(m => m.parent_id === pid);
+            children.forEach(c => {
+                ids.push(c.id);
+                ids = ids.concat(getDescendantIds(c.id));
+            });
+            return ids;
+        }
+        const idsToDelete = [memberId, ...getDescendantIds(memberId)];
+        
+        const { error } = await supabase
+            .from('family_members')
+            .delete()
+            .in('id', idsToDelete);
+            
+        if (error) {
+            alert('删除失败：' + error.message);
+        } else {
+            await loadTreeData();
+        }
     }
 
     window.addEventListener('DOMContentLoaded', loadTreeData);
