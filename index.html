@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, touch-action: manipulation">
     <title>桂林市灵川县老安村李家族谱</title>
     <style>
         :root {
@@ -20,17 +20,18 @@
             user-select: none;
             -webkit-user-select: none;
             -webkit-touch-callout: none;
+            touch-action: pan-x pan-y; /* 允许滚动，但不缩放 */
         }
 
         .header {
-            text-align: center; padding: 40px 20px 10px;
+            text-align: center; padding: 30px 20px 10px;
         }
-        .header h1 { font-size: 28px; font-weight: 300; letter-spacing: 4px; margin: 0; }
+        .header h1 { font-size: 26px; font-weight: 300; letter-spacing: 4px; margin: 0; }
         .loading-text { color: #aaa; font-size: 14px; }
 
         .tree-container {
             width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;
-            padding: 20px 50px 100px; box-sizing: border-box;
+            padding: 20px 30px 80px; box-sizing: border-box;
             scrollbar-width: none;
         }
         .tree-container::-webkit-scrollbar { display: none; }
@@ -41,12 +42,12 @@
         }
         .tree li {
             text-align: center; list-style-type: none; position: relative;
-            padding: 30px 15px 0; white-space: nowrap;
+            padding: 35px 10px 0; white-space: nowrap; /* 增加顶部padding，让出删除按钮空间 */
             transition: all 0.2s;
         }
         .tree li::before, .tree li::after {
             content: ''; position: absolute; top: 0; right: 50%;
-            border-top: 1.5px solid #bdc3c7; width: 50%; height: 30px;
+            border-top: 1.5px solid #bdc3c7; width: 50%; height: 35px; /* 高度加大 */
         }
         .tree li::after {
             right: auto; left: 50%;
@@ -57,19 +58,19 @@
         .tree li:first-child::before, .tree li:last-child::after { border: 0 none; }
         .tree li:last-child::before {
             border-right: 1.5px solid #bdc3c7;
-            border-radius: 0 8px 0 0;
+            border-radius: 0 10px 0 0;
         }
-        .tree li:first-child::after { border-radius: 8px 0 0 0; }
+        .tree li:first-child::after { border-radius: 10px 0 0 0; }
         .tree ul ul::before {
             content: ''; position: absolute; top: 0; left: 50%;
             border-left: 1.5px solid #bdc3c7;
-            width: 0; height: 30px; transform: translateX(-50%);
+            width: 0; height: 35px; transform: translateX(-50%);
         }
 
         .family-node {
             display: inline-flex;
             align-items: center;
-            gap: 16px;
+            gap: 12px;
             position: relative;
         }
 
@@ -78,105 +79,101 @@
             background: var(--card-bg);
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255,255,255,0.5);
-            padding: 12px;
+            padding: 10px;
             display: inline-flex;
             flex-direction: column;
             align-items: center;
             border-radius: 16px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.06);
             transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-            min-width: 100px;
+            min-width: 90px;
             cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
         }
-        .person:hover {
-            transform: translateY(-6px);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
-            border-color: rgba(212,175,55,0.3);
+        .person:active {
+            transform: scale(0.97);
         }
-        .person img { width: 80px; height: 106px; object-fit: cover; border-radius: 10px; background: #eee; }
-        .person .name { margin-top: 12px; font-size: 15px; font-weight: 500; letter-spacing: 1px; }
+        .person img { width: 70px; height: 93px; object-fit: cover; border-radius: 10px; background: #eee; }
+        .person .name { margin-top: 10px; font-size: 14px; font-weight: 500; letter-spacing: 1px; }
 
-        .action-btns { display: flex; gap: 8px; margin-top: 10px; }
+        .action-btns { display: flex; gap: 8px; margin-top: 8px; }
         .add-btn, .spouse-btn {
             background: #fff; color: var(--accent-color);
             border: 1px solid #eaeaea;
-            width: 30px; height: 30px; border-radius: 50%;
-            font-size: 18px; line-height: 28px;
+            width: 32px; height: 32px; border-radius: 50%;
+            font-size: 20px; line-height: 30px;
             cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.08);
             transition: all 0.2s;
             display: flex; align-items: center; justify-content: center;
-            opacity: 0;
+            opacity: 1; /* 手机上一直显示 */
+            -webkit-tap-highlight-color: transparent;
         }
         @media (hover: hover) {
             .person:hover .add-btn,
             .person:hover .spouse-btn { opacity: 1; }
         }
-        @media (max-width: 768px) {
-            .add-btn, .spouse-btn { opacity: 1; width: 28px; height: 28px; }
-            .person img { width: 70px; height: 93px; }
-            .tree li { padding: 20px 8px 0; }
-        }
-        .add-btn:hover, .spouse-btn:hover {
-            background: var(--accent-color); color: #fff; transform: scale(1.1);
+        .add-btn:active, .spouse-btn:active {
+            background: var(--accent-color); color: #fff; transform: scale(0.9);
         }
 
         .delete-btn {
             position: absolute;
-            top: -36px;
+            top: -42px; /* 更远离连线 */
             left: 50%;
             transform: translateX(-50%);
             background: var(--danger-color);
             color: white;
             border: none;
-            width: 30px;
-            height: 30px;
+            width: 34px; /* 加大 */
+            height: 34px;
             border-radius: 50%;
-            font-size: 16px;
+            font-size: 18px;
             cursor: pointer;
-            box-shadow: 0 4px 10px rgba(192,57,43,0.3);
+            box-shadow: 0 4px 12px rgba(192,57,43,0.4);
             display: none;
-            z-index: 10;
+            z-index: 100; /* 确保高于连线 */
             align-items: center;
             justify-content: center;
             transition: 0.2s;
+            -webkit-tap-highlight-color: transparent;
         }
-        .delete-btn:hover { background: #e74c3c; transform: translateX(-50%) scale(1.1); }
+        .delete-btn:active { background: #e74c3c; transform: translateX(-50%) scale(0.9); }
         .delete-btn.show { display: flex; }
 
         .spouse-person {
             opacity: 0.95;
             border-color: rgba(212,175,55,0.2);
         }
-        .spouse-person img { width: 63px; height: 84px; border-radius: 10px; background: #eee; }
-        .spouse-person .name { font-size: 13px; margin-top: 8px; }
+        .spouse-person img { width: 56px; height: 74px; border-radius: 10px; background: #eee; }
+        .spouse-person .name { font-size: 13px; margin-top: 6px; }
 
         /* 通用模态框 */
         .modal-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.4); backdrop-filter: blur(5px);
+            background: rgba(0,0,0,0.5); backdrop-filter: blur(5px);
             display: none; justify-content: center; align-items: center;
             z-index: 1000; opacity: 0; transition: opacity 0.3s;
         }
         .modal {
-            background: #fff; padding: 30px; border-radius: 20px;
-            width: 90%; max-width: 400px;
+            background: #fff; padding: 25px; border-radius: 20px;
+            width: 90%; max-width: 350px;
             box-shadow: 0 25px 50px rgba(0,0,0,0.2);
             transform: translateY(20px); transition: transform 0.3s;
             text-align: center;
         }
-        .modal h2 { margin: 0 0 20px; font-size: 20px; font-weight: 400; }
-        .form-group { margin-bottom: 20px; }
-        .form-group label { display: block; margin-bottom: 8px; font-size: 13px; color: #666; }
+        .modal h2 { margin: 0 0 15px; font-size: 18px; font-weight: 500; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 6px; font-size: 13px; color: #666; }
         .form-group input[type="text"] {
             width: 100%; padding: 12px; border: 1px solid #ddd;
-            border-radius: 8px; box-sizing: border-box; font-size: 14px;
+            border-radius: 10px; box-sizing: border-box; font-size: 14px;
             outline: none;
         }
         .form-group input[type="text"]:focus { border-color: var(--accent-color); }
         .form-group input[type="file"] { width: 100%; font-size: 13px; }
         .gender-select { display: flex; gap: 10px; }
         .gender-select button {
-            flex: 1; padding: 10px; border: 2px solid #ddd;
+            flex: 1; padding: 12px; border: 2px solid #ddd;
             border-radius: 10px; background: white; cursor: pointer;
             font-size: 16px; transition: 0.2s;
         }
@@ -184,18 +181,18 @@
             border-color: var(--accent-color);
             background: rgba(212,175,55,0.1);
         }
-        .modal-btns { display: flex; gap: 10px; justify-content: center; margin-top: 20px; }
-        .btn { padding: 10px 20px; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; }
+        .modal-btns { display: flex; gap: 10px; justify-content: center; margin-top: 15px; }
+        .btn { padding: 12px 25px; border: none; border-radius: 10px; font-size: 14px; cursor: pointer; }
         .btn-cancel { background: #f0f0f0; color: #333; }
         .btn-submit { background: var(--primary-color); color: #fff; }
-        .btn-submit:hover { background: var(--accent-color); }
+        .btn-submit:active { background: var(--accent-color); }
         .modal-overlay.active { display: flex; opacity: 1; }
         .modal-overlay.active .modal { transform: translateY(0); }
         .error-text { color: #c0392b; font-size: 13px; display: none; }
 
         .photo-preview {
-            max-width: 200px;
-            max-height: 260px;
+            max-width: 180px;
+            max-height: 230px;
             border-radius: 12px;
             margin: 10px auto;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
@@ -274,13 +271,12 @@
     let selectedGender = null;
     let allMembers = [];
 
-    // 照片管理状态
     let photoManageMemberId = null;
     let photoManageType = 'member'; // 'member' 或 'spouse'
 
     const DEFAULT_PHOTO = 'default-avatar.png';
 
-    // ==================== 长按删除 ====================
+    // ==================== 长按删除（手机优化） ====================
     let longPressTimer = null;
     let deleteTargetId = null;
 
@@ -291,7 +287,7 @@
         deleteTargetId = memberId;
         longPressTimer = setTimeout(() => {
             showDeleteBtn(personElement);
-        }, 600);
+        }, 400); // 手机端400ms更跟手
     }
 
     function clearLongPress() {
@@ -321,7 +317,7 @@
         btn.classList.add('show');
         setTimeout(() => {
             if (btn) btn.classList.remove('show');
-        }, 5000);
+        }, 4000);
     }
 
     document.addEventListener('click', (e) => {
@@ -435,7 +431,7 @@
         btn.classList.add('active');
     }
 
-    // ==================== 数据加载 ====================
+    // ==================== 数据加载与渲染 ====================
     async function loadTreeData() {
         showLoading(true);
         const { data, error } = await supabase
@@ -486,7 +482,7 @@
             </div>
         `;
 
-        // 按下时记录时间
+        // 按下记录时间，用于区分点击和长按
         mainPerson.addEventListener('mousedown', (e) => {
             mainPerson.setAttribute('data-press-start', Date.now());
             startLongPress(member.id, mainPerson);
@@ -496,11 +492,10 @@
             startLongPress(member.id, mainPerson);
         }, {passive: true});
 
-        // 点击事件：短按打开照片，长按无效
         mainPerson.addEventListener('click', (e) => {
             if (e.target.closest('.add-btn') || e.target.closest('.spouse-btn') || e.target.closest('.delete-btn')) return;
             const pressStart = parseInt(mainPerson.getAttribute('data-press-start') || '0');
-            if (pressStart && Date.now() - pressStart > 400) {
+            if (pressStart && Date.now() - pressStart > 250) {
                 clearLongPress();
                 mainPerson.setAttribute('data-press-start', '0');
                 return;
@@ -539,7 +534,7 @@
             spouseCard.addEventListener('click', (e) => {
                 if (e.target.closest('.delete-btn')) return;
                 const pressStart = parseInt(spouseCard.getAttribute('data-press-start') || '0');
-                if (pressStart && Date.now() - pressStart > 400) {
+                if (pressStart && Date.now() - pressStart > 250) {
                     clearLongPress();
                     spouseCard.setAttribute('data-press-start', '0');
                     return;
