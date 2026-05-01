@@ -203,7 +203,7 @@
 <body>
 
 <div class="header">
-    <h1>桂林市灵川县老安村李家族谱</h1>
+    <h1>李家族谱</h1>
     <div class="loading-text" id="loadingIndicator">加载中...</div>
 </div>
 
@@ -373,16 +373,14 @@
 
         nodeDiv.appendChild(mainPerson);
 
+        // 配偶卡片：统一使用“配偶：”前缀，不再显示“妻/夫”
         if (member.spouse_name) {
             const spouseCard = document.createElement('div');
             spouseCard.className = 'person spouse-person';
             const spousePhoto = member.spouse_photo_url || DEFAULT_PHOTO;
-            const spouseGender = getSpouseGender(member.id);
-            const spouseLabel = spouseGender === 'female' ? '妻' : '夫';
             spouseCard.innerHTML = `
                 <img src="${spousePhoto}" alt="${member.spouse_name}" onerror="this.src='${DEFAULT_PHOTO}'">
-                <span class="name">${member.spouse_name}</span>
-                <div style="font-size:11px;color:#aaa;">${spouseLabel}</div>
+                <span class="name">配偶：${member.spouse_name}</span>
             `;
             spouseCard.addEventListener('mousedown', (e) => { startLongPress(member.id, spouseCard); });
             spouseCard.addEventListener('mouseup', clearLongPress);
