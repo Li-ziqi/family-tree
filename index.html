@@ -41,15 +41,13 @@
             padding: 10px 15px 60px;
             box-sizing: border-box;
             scrollbar-width: none;
-            /* 确保至少能看到树的结构 */
             min-height: 300px;
         }
         .tree-container::-webkit-scrollbar { display: none; }
 
-        /* 树状结构 */
         .tree {
             display: flex;
-            justify-content: flex-start; /* 手机端左对齐，确保左侧卡片可见 */
+            justify-content: flex-start;
             min-width: max-content;
         }
 
@@ -66,12 +64,11 @@
             text-align: center;
             list-style-type: none;
             position: relative;
-            padding: 30px 6px 0; /* 减小水平间距 */
+            padding: 30px 6px 0;
             white-space: nowrap;
             transition: all 0.2s;
         }
 
-        /* 连线 */
         .tree li::before,
         .tree li::after {
             content: '';
@@ -116,7 +113,6 @@
             z-index: 1;
         }
 
-        /* 卡片 */
         .person {
             position: relative;
             background: var(--card-bg);
@@ -153,7 +149,6 @@
             pointer-events: none;
         }
 
-        /* 操作按钮容器 */
         .action-btns {
             display: flex;
             gap: 6px;
@@ -186,37 +181,6 @@
             background: var(--accent-color);
             color: #fff;
             transform: scale(0.9);
-        }
-
-        /* 删除按钮 */
-        .delete-btn {
-            position: absolute;
-            top: -38px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #e74c3c;
-            color: white;
-            border: none;
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            font-size: 16px;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(192,57,43,0.5);
-            display: none;
-            z-index: 100;
-            align-items: center;
-            justify-content: center;
-            transition: 0.2s;
-            -webkit-tap-highlight-color: transparent;
-            pointer-events: auto;
-        }
-        .delete-btn.show {
-            display: flex;
-        }
-        .delete-btn:active {
-            background: #c0392b;
-            transform: translateX(-50%) scale(0.9);
         }
 
         /* 配偶卡片 */
@@ -332,8 +296,13 @@
             background: var(--primary-color);
             color: #fff;
         }
-        .btn-submit:active {
-            background: var(--accent-color);
+        .btn-delete {
+            background: var(--danger-color);
+            color: #fff;
+        }
+        .btn-submit:active,
+        .btn-delete:active {
+            opacity: 0.8;
         }
         .modal-overlay.active {
             display: flex;
@@ -402,7 +371,7 @@
         </div>
     </div>
 
-    <!-- 编辑成员模态框 -->
+    <!-- 编辑成员模态框（含删除按钮） -->
     <div class="modal-overlay" id="editModal">
         <div class="modal">
             <h2 id="editModalTitle">编辑资料</h2>
@@ -431,6 +400,7 @@
             </div>
             <div class="modal-btns">
                 <button class="btn btn-cancel" onclick="closeEditModal()">取消</button>
+                <button class="btn btn-delete" id="editDeleteBtn" onclick="handleDeleteFromEdit()">删除</button>
                 <button class="btn btn-submit" onclick="saveEdit()">保存修改</button>
             </div>
             <p class="error-text" id="editErrorMsg"></p>
@@ -449,7 +419,7 @@
             const DEFAULT_PHOTO = 'default-avatar.png';
 
             // ==================== 全局状态 ====================
-            let currentNodeId = null;
+            let currentNodeId = null;      // 添加成员用
             let currentMode = 'child';
             let selectedGender = null;
             let allMembers = [];
@@ -460,11 +430,7 @@
             let editSelectedGender = null;
             let editCurrentPhotoUrl = null;
 
-            // 删除状态
-            let currentDeleteId = null;
-            let currentDeleteType = 'member';
-
-            // ==================== 辅助函数 ====================
+            // ==================== 工具函数 ====================
             function fileToBase64(file) {
                 return new Promise((resolve) => {
                     if (!file) return resolve(null);
@@ -475,122 +441,10 @@
             }
 
             function showLoading(show) {
-                const el = document.getElementById('loadingIndicator');
-                if (el) el.style.display = show ? 'block' : 'none';
+                document.getElementById('loadingIndicator').style.display = show ? 'block' : 'none';
             }
 
-            function hideAllDeleteButtons() {
-                document.querySelectorAll('.delete-btn').forEach(b => b.classList.remove('show'));
-            }
-
-            // ==================== 删除逻辑 ====================
-            function triggerDelete(id, type) {
-                currentDeleteId = id;
-                currentDeleteType = type;
-
-                // 获取对应的卡片
-                const selector = type === 'member'
-                    ? `.person[data-id="${id}"][data-type="member"]`
-                    : `.person[data-id="${id}"][data-type="spouse"]`;
-                const card = document.querySelector(selector);
-                if (!card) return;
-
-                // 祖先免死金牌
-                const member = allMembers.find(m => m.id === id);
-                if (type === 'member' && member && member.parent_id === null) return;
-
-                // 显示删除按钮
-                hideAllDeleteButtons();
-                let btn = card.querySelector('.delete-btn');
-                if (!btn) {
-                    btn = document.createElement('div');
-                    btn.className = 'delete-btn';
-                    btn.innerHTML = '✕';
-                    btn.setAttribute('data-delete-id', id);
-                    btn.setAttribute('data-delete-type', type);
-                    card.appendChild(btn);
-                }
-
-                // 直接绑定事件
-                btn.onclick = function(e) {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    handleDeleteClick(id, type);
-                    return false;
-                };
-
-                btn.classList.add('show');
-
-                // 5秒后自动隐藏
-                setTimeout(() => {
-                    if (btn && btn.getAttribute('data-delete-id') == id) {
-                        btn.classList.remove('show');
-                    }
-                }, 5000);
-            }
-
-            function handleDeleteClick(id, type) {
-                if (type === 'member') {
-                    if (confirm('确定要删除该成员及其所有后代吗？此操作不可恢复。')) {
-                        deleteMember(id);
-                    }
-                } else {
-                    if (confirm('确定要删除该配偶吗？')) {
-                        clearSpouse(id);
-                    }
-                }
-                hideAllDeleteButtons();
-            }
-
-            async function clearSpouse(memberId) {
-                const { error } = await supabase
-                    .from('family_members')
-                    .update({ spouse_name: null, spouse_photo_url: null })
-                    .eq('id', memberId);
-                if (error) {
-                    alert('删除配偶失败：' + error.message);
-                } else {
-                    await loadTreeData();
-                }
-            }
-
-            async function deleteMember(memberId) {
-                const member = allMembers.find(m => m.id === memberId);
-                if (member && member.parent_id === null) {
-                    alert('祖先节点不可删除');
-                    return;
-                }
-
-                function getDescendantIds(pid) {
-                    let ids = [];
-                    const children = allMembers.filter(m => m.parent_id === pid);
-                    children.forEach(c => {
-                        ids.push(c.id);
-                        ids = ids.concat(getDescendantIds(c.id));
-                    });
-                    return ids;
-                }
-
-                const idsToDelete = [memberId, ...getDescendantIds(memberId)];
-                const { error } = await supabase
-                    .from('family_members')
-                    .delete()
-                    .in('id', idsToDelete);
-                if (error) {
-                    alert('删除失败：' + error.message);
-                } else {
-                    await loadTreeData();
-                }
-            }
-
-            // 全局隐藏删除按钮
-            document.addEventListener('click', function(e) {
-                if (!e.target.closest('.delete-btn') && !e.target.closest('.person')) {
-                    hideAllDeleteButtons();
-                }
-            });
-
-            // ==================== 编辑模态框 ====================
+            // ==================== 编辑模态框（含删除按钮） ====================
             function openEditModal(memberId, type) {
                 const member = allMembers.find(m => m.id === memberId);
                 if (!member) return;
@@ -604,6 +458,7 @@
                 const genderGroup = document.getElementById('editGenderGroup');
                 const photoPreview = document.getElementById('editPhotoPreview');
                 const noPhotoText = document.getElementById('editNoPhotoText');
+                const deleteBtn = document.getElementById('editDeleteBtn');
 
                 if (type === 'member') {
                     title.textContent = '编辑成员';
@@ -614,14 +469,25 @@
                     if (member.gender === 'male') document.getElementById('editGenderMale').classList.add('active');
                     if (member.gender === 'female') document.getElementById('editGenderFemale').classList.add('active');
                     editCurrentPhotoUrl = member.photo_url || null;
+
+                    // 控制删除按钮：根节点不可删除
+                    if (member.parent_id === null) {
+                        deleteBtn.style.display = 'none';
+                    } else {
+                        deleteBtn.style.display = 'inline-block';
+                        deleteBtn.textContent = '删除该成员';
+                    }
                 } else {
                     title.textContent = '编辑配偶';
                     nameInput.value = member.spouse_name || '';
                     genderGroup.style.display = 'none';
                     editSelectedGender = null;
                     editCurrentPhotoUrl = member.spouse_photo_url || null;
+                    deleteBtn.style.display = 'inline-block';
+                    deleteBtn.textContent = '删除配偶';
                 }
 
+                // 照片显示
                 if (editCurrentPhotoUrl && editCurrentPhotoUrl !== DEFAULT_PHOTO) {
                     photoPreview.src = editCurrentPhotoUrl;
                     photoPreview.style.display = 'block';
@@ -667,6 +533,21 @@
                 document.getElementById('editNoPhotoText').style.display = 'block';
             }
 
+            // 编辑窗口中的“删除”按钮
+            function handleDeleteFromEdit() {
+                if (editType === 'member') {
+                    if (confirm('确定要删除该成员及其所有后代吗？此操作不可恢复。')) {
+                        deleteMember(editMemberId);
+                        closeEditModal();
+                    }
+                } else {
+                    if (confirm('确定要删除该配偶吗？')) {
+                        clearSpouse(editMemberId);
+                        closeEditModal();
+                    }
+                }
+            }
+
             async function saveEdit() {
                 const name = document.getElementById('editName').value.trim();
                 if (!name) {
@@ -704,6 +585,48 @@
 
                 closeEditModal();
                 await loadTreeData();
+            }
+
+            // ==================== 删除操作 ====================
+            async function clearSpouse(memberId) {
+                const { error } = await supabase
+                    .from('family_members')
+                    .update({ spouse_name: null, spouse_photo_url: null })
+                    .eq('id', memberId);
+                if (error) {
+                    alert('删除配偶失败：' + error.message);
+                } else {
+                    await loadTreeData();
+                }
+            }
+
+            async function deleteMember(memberId) {
+                const member = allMembers.find(m => m.id === memberId);
+                if (member && member.parent_id === null) {
+                    alert('祖先节点不可删除');
+                    return;
+                }
+
+                function getDescendantIds(pid) {
+                    let ids = [];
+                    const children = allMembers.filter(m => m.parent_id === pid);
+                    children.forEach(c => {
+                        ids.push(c.id);
+                        ids = ids.concat(getDescendantIds(c.id));
+                    });
+                    return ids;
+                }
+
+                const idsToDelete = [memberId, ...getDescendantIds(memberId)];
+                const { error } = await supabase
+                    .from('family_members')
+                    .delete()
+                    .in('id', idsToDelete);
+                if (error) {
+                    alert('删除失败：' + error.message);
+                } else {
+                    await loadTreeData();
+                }
             }
 
             // ==================== 添加成员模态框 ====================
@@ -829,7 +752,7 @@
                     </div>
                 `;
 
-                // 按钮事件委托
+                // 按钮事件
                 mainCard.querySelector('.add-btn').onclick = function(e) {
                     e.stopPropagation();
                     openModal(member.id, 'child');
@@ -839,15 +762,9 @@
                     openModal(member.id, 'spouse');
                 };
 
-                // 长按事件 (contextmenu)
-                mainCard.addEventListener('contextmenu', function(e) {
-                    e.preventDefault();
-                    triggerDelete(member.id, 'member');
-                });
-
-                // 单击打开编辑
+                // 单击卡片打开编辑
                 mainCard.addEventListener('click', function(e) {
-                    if (e.target.closest('.add-btn') || e.target.closest('.spouse-btn') || e.target.closest('.delete-btn')) return;
+                    if (e.target.closest('.add-btn') || e.target.closest('.spouse-btn')) return;
                     openEditModal(member.id, 'member');
                 });
 
@@ -865,13 +782,7 @@
                         <span class="name">配偶：${member.spouse_name}</span>
                     `;
 
-                    spouseCard.addEventListener('contextmenu', function(e) {
-                        e.preventDefault();
-                        triggerDelete(member.id, 'spouse');
-                    });
-
                     spouseCard.addEventListener('click', function(e) {
-                        if (e.target.closest('.delete-btn')) return;
                         openEditModal(member.id, 'spouse');
                     });
 
@@ -911,7 +822,7 @@
             // ==================== 启动 ====================
             window.addEventListener('DOMContentLoaded', loadTreeData);
 
-            // 暴露必要函数到全局
+            // 暴露函数到全局
             window.openModal = openModal;
             window.closeModal = closeModal;
             window.submitForm = submitForm;
@@ -922,6 +833,7 @@
             window.triggerEditPhotoUpload = triggerEditPhotoUpload;
             window.handleEditPhotoReplace = handleEditPhotoReplace;
             window.deleteEditPhoto = deleteEditPhoto;
+            window.handleDeleteFromEdit = handleDeleteFromEdit;
 
         })();
     </script>
