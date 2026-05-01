@@ -26,7 +26,6 @@
             text-align: center; padding: 40px 20px 10px;
         }
         .header h1 { font-size: 28px; font-weight: 300; letter-spacing: 4px; margin: 0; }
-        .header p { font-size: 14px; color: #888; margin: 8px 0 20px; }
         .loading-text { color: #aaa; font-size: 14px; }
 
         .tree-container {
@@ -96,17 +95,6 @@
         }
         .person img { width: 80px; height: 106px; object-fit: cover; border-radius: 10px; background: #eee; }
         .person .name { margin-top: 12px; font-size: 15px; font-weight: 500; letter-spacing: 1px; }
-
-        .children-info {
-            margin-top: 6px;
-            font-size: 12px;
-            color: #777;
-            border-top: 1px dashed #ddd;
-            padding-top: 6px;
-            max-width: 140px;
-            white-space: normal;
-            word-break: break-all;
-        }
 
         .action-btns { display: flex; gap: 8px; margin-top: 10px; }
         .add-btn, .spouse-btn {
@@ -215,8 +203,7 @@
 <body>
 
 <div class="header">
-    <h1>家族传承</h1>
-    <p></p>
+    <h1>桂林市灵川县老安村李家族谱</h1>
     <div class="loading-text" id="loadingIndicator">加载中...</div>
 </div>
 
@@ -264,18 +251,14 @@
 
     const DEFAULT_PHOTO = 'default-avatar.png';
 
-    // ==================== 长按删除（根节点防护） ====================
+    // ==================== 长按删除（根节点不可删） ====================
     let longPressTimer = null;
     let deleteTargetId = null;
-    let deleteBtnElement = null;
 
     function startLongPress(memberId, personElement) {
         clearLongPress();
-        // 🔒 核心防护：如果该成员是祖先（parent_id === null），不触发删除
         const member = allMembers.find(m => m.id === memberId);
-        if (member && member.parent_id === null) {
-            return; // 始祖无权删除，直接结束
-        }
+        if (member && member.parent_id === null) return;
         deleteTargetId = memberId;
         longPressTimer = setTimeout(() => {
             showDeleteBtn(personElement);
@@ -307,7 +290,6 @@
             personElement.appendChild(btn);
         }
         btn.classList.add('show');
-        deleteBtnElement = btn;
         setTimeout(() => {
             if (btn) btn.classList.remove('show');
         }, 5000);
@@ -342,22 +324,22 @@
         showLoading(false);
     }
 
-    function getChildTitle(member) {
-        const children = allMembers.filter(m => m.parent_id === member.id);
-        if (children.length === 0) return '';
-        children.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-        const titles = children.map((child, index) => {
-            const order = ['一', '二', '三', '四', '五'][index] || (index+1);
-            const genderChar = child.gender === 'male' ? '子' : '女';
-            return `${order}${genderChar}：${child.name}`;
-        });
-        return titles.join('，');
+    function getMemberTitle(member) {
+        if (member.parent_id === null) return '';
+        const siblings = allMembers.filter(m => m.parent_id === member.parent_id);
+        siblings.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+        const index = siblings.findIndex(s => s.id === member.id);
+        if (index === -1) return '';
+        const orderList = ['一', '二', '三', '四', '五'];
+        const orderStr = orderList[index] || `${index + 1}`;
+        const genderChar = member.gender === 'male' ? '子' : '女';
+        return `${orderStr}${genderChar}：`;
     }
 
     function getSpouseGender(memberId) {
         const children = allMembers.filter(m => m.parent_id === memberId);
         if (children.length > 0) {
-            children.sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
+            children.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
             return children[0].gender === 'male' ? 'female' : 'male';
         }
         return 'female';
@@ -371,23 +353,21 @@
         mainPerson.className = 'person';
         mainPerson.setAttribute('data-id', member.id);
         const photo = member.photo_url || DEFAULT_PHOTO;
+        const titlePrefix = getMemberTitle(member);
+        const displayName = titlePrefix + member.name;
         mainPerson.innerHTML = `
             <img src="${photo}" alt="${member.name}" onerror="this.src='${DEFAULT_PHOTO}'">
-            <span class="name">${member.name}</span>
+            <span class="name">${displayName}</span>
             <div class="action-btns">
                 <div class="add-btn" onclick="event.stopPropagation(); openModal(${member.id}, 'child')" title="添加子嗣">+</div>
                 <div class="spouse-btn" onclick="event.stopPropagation(); openModal(${member.id}, 'spouse')" title="添加配偶">👰</div>
             </div>
         `;
 
-        mainPerson.addEventListener('mousedown', (e) => {
-            startLongPress(member.id, mainPerson);
-        });
+        mainPerson.addEventListener('mousedown', (e) => { startLongPress(member.id, mainPerson); });
         mainPerson.addEventListener('mouseup', clearLongPress);
         mainPerson.addEventListener('mouseleave', clearLongPress);
-        mainPerson.addEventListener('touchstart', (e) => {
-            startLongPress(member.id, mainPerson);
-        }, {passive: true});
+        mainPerson.addEventListener('touchstart', (e) => { startLongPress(member.id, mainPerson); }, {passive: true});
         mainPerson.addEventListener('touchend', clearLongPress);
         mainPerson.addEventListener('touchmove', clearLongPress);
 
@@ -404,25 +384,13 @@
                 <span class="name">${member.spouse_name}</span>
                 <div style="font-size:11px;color:#aaa;">${spouseLabel}</div>
             `;
-            spouseCard.addEventListener('mousedown', (e) => {
-                startLongPress(member.id, spouseCard);
-            });
+            spouseCard.addEventListener('mousedown', (e) => { startLongPress(member.id, spouseCard); });
             spouseCard.addEventListener('mouseup', clearLongPress);
             spouseCard.addEventListener('mouseleave', clearLongPress);
-            spouseCard.addEventListener('touchstart', (e) => {
-                startLongPress(member.id, spouseCard);
-            }, {passive: true});
+            spouseCard.addEventListener('touchstart', (e) => { startLongPress(member.id, spouseCard); }, {passive: true});
             spouseCard.addEventListener('touchend', clearLongPress);
             spouseCard.addEventListener('touchmove', clearLongPress);
             nodeDiv.appendChild(spouseCard);
-        }
-
-        const childrenTitle = getChildTitle(member);
-        if (childrenTitle) {
-            const childrenInfo = document.createElement('div');
-            childrenInfo.className = 'children-info';
-            childrenInfo.textContent = childrenTitle;
-            mainPerson.appendChild(childrenInfo);
         }
 
         return nodeDiv;
@@ -554,13 +522,11 @@
     }
 
     async function deleteMember(memberId) {
-        // 🔒 双重保险：再次确认不是根节点
         const member = allMembers.find(m => m.id === memberId);
         if (member && member.parent_id === null) {
             alert('祖先节点不可删除');
             return;
         }
-
         function getDescendantIds(pid) {
             let ids = [];
             const children = allMembers.filter(m => m.parent_id === pid);
@@ -571,12 +537,10 @@
             return ids;
         }
         const idsToDelete = [memberId, ...getDescendantIds(memberId)];
-        
         const { error } = await supabase
             .from('family_members')
             .delete()
             .in('id', idsToDelete);
-            
         if (error) {
             alert('删除失败：' + error.message);
         } else {
