@@ -193,7 +193,6 @@
         .modal-overlay.active .modal { transform: translateY(0); }
         .error-text { color: #c0392b; font-size: 13px; display: none; }
 
-        /* 照片管理模态框特殊样式 */
         .photo-preview {
             max-width: 200px;
             max-height: 260px;
@@ -255,9 +254,7 @@
             <img id="photoPreviewImg" class="photo-preview" src="" alt="照片" style="display:none;">
             <p id="noPhotoText" style="color:#999;">暂无照片</p>
         </div>
-        <div class="photo-actions" id="photoActions">
-            <!-- 按钮动态生成 -->
-        </div>
+        <div class="photo-actions" id="photoActions"></div>
         <div class="modal-btns" style="margin-top: 20px;">
             <button class="btn btn-cancel" onclick="closePhotoModal()">关闭</button>
         </div>
@@ -391,7 +388,6 @@
         const reader = new FileReader();
         reader.onload = async (e) => {
             const base64 = e.target.result;
-            // 更新数据库
             const member = allMembers.find(m => m.id === photoManageMemberId);
             if (!member) return;
 
@@ -490,17 +486,30 @@
             </div>
         `;
 
-        // 点击卡片查看照片
+        // 按下时记录时间
+        mainPerson.addEventListener('mousedown', (e) => {
+            mainPerson.setAttribute('data-press-start', Date.now());
+            startLongPress(member.id, mainPerson);
+        });
+        mainPerson.addEventListener('touchstart', (e) => {
+            mainPerson.setAttribute('data-press-start', Date.now());
+            startLongPress(member.id, mainPerson);
+        }, {passive: true});
+
+        // 点击事件：短按打开照片，长按无效
         mainPerson.addEventListener('click', (e) => {
-            // 避免按钮冒泡触发
             if (e.target.closest('.add-btn') || e.target.closest('.spouse-btn') || e.target.closest('.delete-btn')) return;
+            const pressStart = parseInt(mainPerson.getAttribute('data-press-start') || '0');
+            if (pressStart && Date.now() - pressStart > 400) {
+                clearLongPress();
+                mainPerson.setAttribute('data-press-start', '0');
+                return;
+            }
             openPhotoModal(member.id, 'member');
         });
 
-        mainPerson.addEventListener('mousedown', (e) => { startLongPress(member.id, mainPerson); });
         mainPerson.addEventListener('mouseup', clearLongPress);
         mainPerson.addEventListener('mouseleave', clearLongPress);
-        mainPerson.addEventListener('touchstart', (e) => { startLongPress(member.id, mainPerson); }, {passive: true});
         mainPerson.addEventListener('touchend', clearLongPress);
         mainPerson.addEventListener('touchmove', clearLongPress);
 
@@ -518,15 +527,28 @@
                 <span class="name">配偶：${member.spouse_name}</span>
             `;
 
+            spouseCard.addEventListener('mousedown', (e) => {
+                spouseCard.setAttribute('data-press-start', Date.now());
+                startLongPress(member.id, spouseCard);
+            });
+            spouseCard.addEventListener('touchstart', (e) => {
+                spouseCard.setAttribute('data-press-start', Date.now());
+                startLongPress(member.id, spouseCard);
+            }, {passive: true});
+
             spouseCard.addEventListener('click', (e) => {
                 if (e.target.closest('.delete-btn')) return;
+                const pressStart = parseInt(spouseCard.getAttribute('data-press-start') || '0');
+                if (pressStart && Date.now() - pressStart > 400) {
+                    clearLongPress();
+                    spouseCard.setAttribute('data-press-start', '0');
+                    return;
+                }
                 openPhotoModal(member.id, 'spouse');
             });
 
-            spouseCard.addEventListener('mousedown', (e) => { startLongPress(member.id, spouseCard); });
             spouseCard.addEventListener('mouseup', clearLongPress);
             spouseCard.addEventListener('mouseleave', clearLongPress);
-            spouseCard.addEventListener('touchstart', (e) => { startLongPress(member.id, spouseCard); }, {passive: true});
             spouseCard.addEventListener('touchend', clearLongPress);
             spouseCard.addEventListener('touchmove', clearLongPress);
 
