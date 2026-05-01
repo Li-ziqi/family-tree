@@ -226,7 +226,7 @@
             </div>
         </div>
         <div class="form-group">
-            <label>上传证件照</label>
+            <label>上传照片</label>
             <input type="file" id="newPhoto" accept="image/*">
         </div>
         <div class="modal-btns">
@@ -251,7 +251,7 @@
 
     const DEFAULT_PHOTO = 'default-avatar.png';
 
-    // ==================== 长按删除（根节点不可删） ====================
+    // 长按删除
     let longPressTimer = null;
     let deleteTargetId = null;
 
@@ -360,7 +360,7 @@
             <span class="name">${displayName}</span>
             <div class="action-btns">
                 <div class="add-btn" onclick="event.stopPropagation(); openModal(${member.id}, 'child')" title="添加子嗣">+</div>
-                <div class="spouse-btn" onclick="event.stopPropagation(); openModal(${member.id}, 'spouse')" title="添加配偶">👰</div>
+                <div class="spouse-btn" onclick="event.stopPropagation(); openModal(${member.id}, 'spouse')" title="添加配偶">💑</div>
             </div>
         `;
 
@@ -373,7 +373,6 @@
 
         nodeDiv.appendChild(mainPerson);
 
-        // 配偶卡片：统一使用“配偶：”前缀，不再显示“妻/夫”
         if (member.spouse_name) {
             const spouseCard = document.createElement('div');
             spouseCard.className = 'person spouse-person';
