@@ -12,6 +12,10 @@
             --danger-color: #c0392b;
         }
 
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
@@ -21,784 +25,905 @@
             -webkit-user-select: none;
             -webkit-touch-callout: none;
             touch-action: pan-x pan-y;
+            overflow-x: hidden;
         }
 
         .header {
-            text-align: center; padding: 30px 20px 10px;
+            text-align: center; padding: 20px 15px 5px;
         }
-        .header h1 { font-size: 26px; font-weight: 300; letter-spacing: 4px; margin: 0; }
-        .loading-text { color: #aaa; font-size: 14px; }
+        .header h1 { font-size: 22px; font-weight: 300; letter-spacing: 3px; margin: 0; }
+        .loading-text { color: #aaa; font-size: 13px; margin-top: 5px; }
 
         .tree-container {
-            width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;
-            padding: 20px 30px 80px; box-sizing: border-box;
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 10px 15px 60px;
+            box-sizing: border-box;
             scrollbar-width: none;
+            /* 确保至少能看到树的结构 */
+            min-height: 300px;
         }
         .tree-container::-webkit-scrollbar { display: none; }
 
-        .tree ul {
-            padding-top: 30px; position: relative;
-            display: flex; justify-content: center; padding-left: 0;
+        /* 树状结构 */
+        .tree {
+            display: flex;
+            justify-content: flex-start; /* 手机端左对齐，确保左侧卡片可见 */
+            min-width: max-content;
         }
+
+        .tree ul {
+            padding-top: 25px;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            padding-left: 0;
+            margin: 0;
+        }
+
         .tree li {
-            text-align: center; list-style-type: none; position: relative;
-            padding: 35px 10px 0; white-space: nowrap;
+            text-align: center;
+            list-style-type: none;
+            position: relative;
+            padding: 30px 6px 0; /* 减小水平间距 */
+            white-space: nowrap;
             transition: all 0.2s;
         }
-        .tree li::before, .tree li::after {
-            content: ''; position: absolute; top: 0; right: 50%;
-            border-top: 1.5px solid #bdc3c7; width: 50%; height: 35px;
+
+        /* 连线 */
+        .tree li::before,
+        .tree li::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 50%;
+            border-top: 1.5px solid #bdc3c7;
+            width: 50%;
+            height: 30px;
         }
         .tree li::after {
-            right: auto; left: 50%;
+            right: auto;
+            left: 50%;
             border-left: 1.5px solid #bdc3c7;
         }
-        .tree li:only-child::after, .tree li:only-child::before { display: none; }
+        .tree li:only-child::after,
+        .tree li:only-child::before { display: none; }
         .tree li:only-child { padding-top: 0; }
-        .tree li:first-child::before, .tree li:last-child::after { border: 0 none; }
+        .tree li:first-child::before,
+        .tree li:last-child::after { border: 0 none; }
         .tree li:last-child::before {
             border-right: 1.5px solid #bdc3c7;
-            border-radius: 0 10px 0 0;
+            border-radius: 0 8px 0 0;
         }
-        .tree li:first-child::after { border-radius: 10px 0 0 0; }
+        .tree li:first-child::after { border-radius: 8px 0 0 0; }
         .tree ul ul::before {
-            content: ''; position: absolute; top: 0; left: 50%;
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
             border-left: 1.5px solid #bdc3c7;
-            width: 0; height: 35px; transform: translateX(-50%);
+            width: 0;
+            height: 30px;
+            transform: translateX(-50%);
         }
 
         .family-node {
             display: inline-flex;
             align-items: center;
-            gap: 12px;
+            gap: 8px;
             position: relative;
+            z-index: 1;
         }
 
+        /* 卡片 */
         .person {
             position: relative;
             background: var(--card-bg);
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255,255,255,0.5);
-            padding: 10px;
+            padding: 8px;
             display: inline-flex;
             flex-direction: column;
             align-items: center;
-            border-radius: 16px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.06);
+            border-radius: 14px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.05);
             transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-            min-width: 90px;
+            min-width: 75px;
             cursor: pointer;
             -webkit-tap-highlight-color: transparent;
+            z-index: 2;
         }
-        .person:active { transform: scale(0.97); }
-        .person img { width: 70px; height: 93px; object-fit: cover; border-radius: 10px; background: #eee; }
-        .person .name { margin-top: 10px; font-size: 14px; font-weight: 500; letter-spacing: 1px; }
+        .person:active { transform: scale(0.96); }
 
-        .action-btns { display: flex; gap: 8px; margin-top: 8px; }
-        .add-btn, .spouse-btn {
-            background: #fff; color: var(--accent-color);
+        .person img {
+            width: 60px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+            background: #eee;
+            pointer-events: none;
+        }
+
+        .person .name {
+            margin-top: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            letter-spacing: 1px;
+            pointer-events: none;
+        }
+
+        /* 操作按钮容器 */
+        .action-btns {
+            display: flex;
+            gap: 6px;
+            margin-top: 6px;
+            pointer-events: auto;
+        }
+
+        .add-btn,
+        .spouse-btn {
+            background: #fff;
+            color: var(--accent-color);
             border: 1px solid #eaeaea;
-            width: 32px; height: 32px; border-radius: 50%;
-            font-size: 20px; line-height: 30px;
-            cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.08);
-            transition: all 0.2s;
-            display: flex; align-items: center; justify-content: center;
-            opacity: 1;
-            -webkit-tap-highlight-color: transparent;
-        }
-        .add-btn:active, .spouse-btn:active {
-            background: var(--accent-color); color: #fff; transform: scale(0.9);
-        }
-
-        .delete-btn {
-            position: absolute;
-            top: -42px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--danger-color);
-            color: white;
-            border: none;
-            width: 34px;
-            height: 34px;
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
             font-size: 18px;
+            line-height: 26px;
             cursor: pointer;
-            box-shadow: 0 4px 12px rgba(192,57,43,0.4);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.06);
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 1;
+            -webkit-tap-highlight-color: transparent;
+            z-index: 5;
+        }
+        .add-btn:active,
+        .spouse-btn:active {
+            background: var(--accent-color);
+            color: #fff;
+            transform: scale(0.9);
+        }
+
+        /* 删除按钮 */
+        .delete-btn {
+            position: absolute;
+            top: -38px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #e74c3c;
+            color: white;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(192,57,43,0.5);
             display: none;
             z-index: 100;
             align-items: center;
             justify-content: center;
             transition: 0.2s;
             -webkit-tap-highlight-color: transparent;
+            pointer-events: auto;
         }
-        .delete-btn:active { background: #e74c3c; transform: translateX(-50%) scale(0.9); }
-        .delete-btn.show { display: flex; }
+        .delete-btn.show {
+            display: flex;
+        }
+        .delete-btn:active {
+            background: #c0392b;
+            transform: translateX(-50%) scale(0.9);
+        }
 
+        /* 配偶卡片 */
         .spouse-person {
             opacity: 0.95;
             border-color: rgba(212,175,55,0.2);
         }
-        .spouse-person img { width: 56px; height: 74px; border-radius: 10px; background: #eee; }
-        .spouse-person .name { font-size: 13px; margin-top: 6px; }
+        .spouse-person img {
+            width: 48px;
+            height: 64px;
+            border-radius: 8px;
+            background: #eee;
+        }
+        .spouse-person .name {
+            font-size: 12px;
+            margin-top: 5px;
+        }
 
-        /* 模态框通用 */
+        /* 模态框 */
         .modal-overlay {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.5); backdrop-filter: blur(5px);
-            display: none; justify-content: center; align-items: center;
-            z-index: 1000; opacity: 0; transition: opacity 0.3s;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(5px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s;
+            padding: 20px;
         }
         .modal {
-            background: #fff; padding: 25px; border-radius: 20px;
-            width: 90%; max-width: 350px;
-            box-shadow: 0 25px 50px rgba(0,0,0,0.2);
-            transform: translateY(20px); transition: transform 0.3s;
+            background: #fff;
+            padding: 20px;
+            border-radius: 18px;
+            width: 100%;
+            max-width: 320px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.25);
+            transform: translateY(20px);
+            transition: transform 0.3s;
             text-align: center;
         }
-        .modal h2 { margin: 0 0 15px; font-size: 18px; font-weight: 500; }
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 6px; font-size: 13px; color: #666; }
+        .modal h2 {
+            margin: 0 0 12px;
+            font-size: 17px;
+            font-weight: 500;
+        }
+        .form-group {
+            margin-bottom: 12px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 12px;
+            color: #666;
+        }
         .form-group input[type="text"] {
-            width: 100%; padding: 12px; border: 1px solid #ddd;
-            border-radius: 10px; box-sizing: border-box; font-size: 14px;
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 14px;
             outline: none;
         }
-        .form-group input[type="text"]:focus { border-color: var(--accent-color); }
-        .form-group input[type="file"] { width: 100%; font-size: 13px; }
-        .gender-select { display: flex; gap: 10px; }
+        .form-group input[type="text"]:focus {
+            border-color: var(--accent-color);
+        }
+        .form-group input[type="file"] {
+            width: 100%;
+            font-size: 13px;
+        }
+        .gender-select {
+            display: flex;
+            gap: 8px;
+        }
         .gender-select button {
-            flex: 1; padding: 12px; border: 2px solid #ddd;
-            border-radius: 10px; background: white; cursor: pointer;
-            font-size: 16px; transition: 0.2s;
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            background: white;
+            cursor: pointer;
+            font-size: 15px;
+            transition: 0.2s;
         }
         .gender-select button.active {
             border-color: var(--accent-color);
             background: rgba(212,175,55,0.1);
         }
-        .modal-btns { display: flex; gap: 10px; justify-content: center; margin-top: 15px; }
-        .btn { padding: 12px 25px; border: none; border-radius: 10px; font-size: 14px; cursor: pointer; }
-        .btn-cancel { background: #f0f0f0; color: #333; }
-        .btn-submit { background: var(--primary-color); color: #fff; }
-        .btn-submit:active { background: var(--accent-color); }
-        .modal-overlay.active { display: flex; opacity: 1; }
-        .modal-overlay.active .modal { transform: translateY(0); }
-        .error-text { color: #c0392b; font-size: 13px; display: none; }
-
-        .photo-preview {
-            max-width: 150px;
-            max-height: 200px;
-            border-radius: 12px;
-            margin: 10px auto;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-        .photo-actions {
+        .modal-btns {
             display: flex;
             gap: 10px;
             justify-content: center;
             margin-top: 15px;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .btn-cancel {
+            background: #f0f0f0;
+            color: #333;
+        }
+        .btn-submit {
+            background: var(--primary-color);
+            color: #fff;
+        }
+        .btn-submit:active {
+            background: var(--accent-color);
+        }
+        .modal-overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+        .modal-overlay.active .modal {
+            transform: translateY(0);
+        }
+        .error-text {
+            color: #c0392b;
+            font-size: 12px;
+            display: none;
+        }
+
+        .photo-preview {
+            max-width: 120px;
+            max-height: 160px;
+            border-radius: 10px;
+            margin: 8px auto;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+        .photo-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 10px;
             flex-wrap: wrap;
         }
     </style>
 </head>
 <body>
 
-<div class="header">
-    <h1>李家族谱</h1>
-    <div class="loading-text" id="loadingIndicator">加载中...</div>
-</div>
-
-<div class="tree-container">
-    <div class="tree" id="familyTree"></div>
-</div>
-
-<!-- 添加成员/配偶模态框（原有） -->
-<div class="modal-overlay" id="addModal">
-    <div class="modal">
-        <h2 id="modalTitle">添加成员</h2>
-        <div class="form-group">
-            <label>姓名</label>
-            <input type="text" id="newName" placeholder="请输入姓名">
-        </div>
-        <div class="form-group" id="genderGroup" style="display:none;">
-            <label>性别</label>
-            <div class="gender-select">
-                <button type="button" id="genderMale" onclick="setGender('male', this)">男</button>
-                <button type="button" id="genderFemale" onclick="setGender('female', this)">女</button>
-            </div>
-        </div>
-        <div class="form-group">
-            <label>上传照片</label>
-            <input type="file" id="newPhoto" accept="image/*">
-        </div>
-        <div class="modal-btns">
-            <button class="btn btn-cancel" onclick="closeModal()">取消</button>
-            <button class="btn btn-submit" onclick="submitForm()">确认添加</button>
-        </div>
-        <p class="error-text" id="errorMsg"></p>
+    <div class="header">
+        <h1>李家族谱</h1>
+        <div class="loading-text" id="loadingIndicator">加载中...</div>
     </div>
-</div>
 
-<!-- 编辑成员/配偶模态框（单击卡片打开） -->
-<div class="modal-overlay" id="editModal">
-    <div class="modal">
-        <h2 id="editModalTitle">编辑资料</h2>
-        <div class="form-group">
-            <label>姓名</label>
-            <input type="text" id="editName" placeholder="请输入姓名">
-        </div>
-        <div class="form-group" id="editGenderGroup" style="display:none;">
-            <label>性别</label>
-            <div class="gender-select">
-                <button type="button" id="editGenderMale" onclick="setEditGender('male', this)">男</button>
-                <button type="button" id="editGenderFemale" onclick="setEditGender('female', this)">女</button>
-            </div>
-        </div>
-        <div class="form-group">
-            <label>照片</label>
-            <div id="editPhotoContainer">
-                <img id="editPhotoPreview" class="photo-preview" src="" alt="照片" style="display:none;">
-                <p id="editNoPhotoText" style="color:#999;">暂无照片</p>
-            </div>
-            <div class="photo-actions" id="editPhotoActions">
-                <button class="btn btn-submit" onclick="triggerEditPhotoUpload()">上传/替换照片</button>
-                <button class="btn btn-cancel" style="background:#c0392b;color:white;" onclick="deleteEditPhoto()">删除照片</button>
-            </div>
-            <input type="file" id="editPhotoInput" accept="image/*" style="display:none;" onchange="handleEditPhotoReplace(event)">
-        </div>
-        <div class="modal-btns">
-            <button class="btn btn-cancel" onclick="closeEditModal()">取消</button>
-            <button class="btn btn-submit" onclick="saveEdit()">保存修改</button>
-        </div>
-        <p class="error-text" id="editErrorMsg"></p>
+    <div class="tree-container">
+        <div class="tree" id="familyTree"></div>
     </div>
-</div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
-
-<script>
-    const SUPABASE_URL = 'https://yihrrkvridiyfdiabkob.supabase.co';
-    const SUPABASE_ANON_KEY = 'sb_publishable_bra_sHf-dNI1DPaLo03WSw_s-KafG2-';
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    let currentNodeId = null;      // 添加成员时用
-    let currentMode = 'child';
-    let selectedGender = null;
-    let allMembers = [];
-
-    // 编辑模态框状态
-    let editMemberId = null;
-    let editType = 'member';      // 'member' 或 'spouse'
-    let editSelectedGender = null;
-    let editCurrentPhotoUrl = null;  // 当前照片（用于删除时判断）
-
-    const DEFAULT_PHOTO = 'default-avatar.png';
-
-    // ==================== 长按删除（主成员和配偶均支持，修复点击无响应） ====================
-    let longPressTimer = null;
-    let deleteTargetId = null;
-    let deleteTargetType = 'member'; // 记录删除的是成员还是配偶
-
-    function startLongPress(memberId, personElement, type) {
-        clearLongPress();
-        const member = allMembers.find(m => m.id === memberId);
-        if (!member) return;
-        // 主成员且是根节点不可删
-        if (type === 'member' && member.parent_id === null) return;
-        deleteTargetId = memberId;
-        deleteTargetType = type;
-        longPressTimer = setTimeout(() => {
-            showDeleteBtn(personElement, type);
-        }, 400);
-    }
-
-    function clearLongPress() {
-        if (longPressTimer) {
-            clearTimeout(longPressTimer);
-            longPressTimer = null;
-        }
-    }
-
-    function showDeleteBtn(personElement, type) {
-        // 隐藏其他删除按钮
-        document.querySelectorAll('.delete-btn').forEach(btn => btn.classList.remove('show'));
-        let btn = personElement.querySelector('.delete-btn');
-        if (!btn) {
-            btn = document.createElement('div');
-            btn.className = 'delete-btn';
-            btn.innerHTML = '✕';
-            btn.title = type === 'member' ? '删除此成员及其所有后代' : '删除配偶';
-            personElement.appendChild(btn);
-        }
-        // 使用闭包保存当前的 id 和 type，避免被后续覆盖
-        const targetId = deleteTargetId;
-        const targetType = type;
-        btn.onclick = function(e) {
-            e.stopPropagation();
-            if (targetType === 'member') {
-                if (confirm('确定要删除该成员及其所有后代吗？此操作不可恢复。')) {
-                    deleteMember(targetId);
-                }
-            } else {
-                if (confirm('确定要删除该配偶吗？')) {
-                    clearSpouse(targetId);
-                }
-            }
-            btn.classList.remove('show');
-        };
-        btn.classList.add('show');
-        setTimeout(() => {
-            if (btn) btn.classList.remove('show');
-        }, 4000);
-    }
-
-    // 点击其他地方隐藏删除按钮
-    document.addEventListener('click', (e) => {
-        if (!e.target.closest('.person')) {
-            document.querySelectorAll('.delete-btn').forEach(btn => btn.classList.remove('show'));
-        }
-    });
-
-    // 清除配偶
-    async function clearSpouse(memberId) {
-        const { error } = await supabase
-            .from('family_members')
-            .update({ spouse_name: null, spouse_photo_url: null })
-            .eq('id', memberId);
-        if (error) {
-            alert('删除配偶失败：' + error.message);
-        } else {
-            await loadTreeData();
-        }
-    }
-
-    // ==================== 编辑模态框（单击卡片） ====================
-    function openEditModal(memberId, type) {
-        const member = allMembers.find(m => m.id === memberId);
-        if (!member) return;
-        editMemberId = memberId;
-        editType = type;
-
-        const title = document.getElementById('editModalTitle');
-        const nameInput = document.getElementById('editName');
-        const genderGroup = document.getElementById('editGenderGroup');
-        const photoPreview = document.getElementById('editPhotoPreview');
-        const noPhotoText = document.getElementById('editNoPhotoText');
-        const photoActions = document.getElementById('editPhotoActions');
-        const errorMsg = document.getElementById('editErrorMsg');
-
-        // 重置
-        errorMsg.style.display = 'none';
-        document.querySelectorAll('#editGenderGroup .gender-select button').forEach(b => b.classList.remove('active'));
-
-        if (type === 'member') {
-            title.textContent = '编辑成员';
-            nameInput.value = member.name || '';
-            genderGroup.style.display = 'block';
-            // 设置性别
-            editSelectedGender = member.gender || null;
-            if (member.gender === 'male') {
-                document.getElementById('editGenderMale').classList.add('active');
-            } else if (member.gender === 'female') {
-                document.getElementById('editGenderFemale').classList.add('active');
-            }
-            editCurrentPhotoUrl = member.photo_url || null;
-        } else {
-            title.textContent = '编辑配偶';
-            nameInput.value = member.spouse_name || '';
-            genderGroup.style.display = 'none';
-            editSelectedGender = null;
-            editCurrentPhotoUrl = member.spouse_photo_url || null;
-        }
-
-        // 照片显示
-        const photoUrl = editCurrentPhotoUrl;
-        if (photoUrl && photoUrl !== DEFAULT_PHOTO) {
-            photoPreview.src = photoUrl;
-            photoPreview.style.display = 'block';
-            noPhotoText.style.display = 'none';
-            // 确保替换/删除按钮可见
-            photoActions.querySelectorAll('button')[0].style.display = 'inline-block';
-            photoActions.querySelectorAll('button')[1].style.display = 'inline-block';
-        } else {
-            photoPreview.style.display = 'none';
-            noPhotoText.style.display = 'block';
-            photoActions.querySelectorAll('button')[0].style.display = 'inline-block';
-            photoActions.querySelectorAll('button')[1].style.display = 'inline-block';
-        }
-
-        document.getElementById('editModal').classList.add('active');
-    }
-
-    function closeEditModal() {
-        document.getElementById('editModal').classList.remove('active');
-        editMemberId = null;
-    }
-
-    function setEditGender(gender, btn) {
-        editSelectedGender = gender;
-        document.querySelectorAll('#editGenderGroup .gender-select button').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-    }
-
-    function triggerEditPhotoUpload() {
-        document.getElementById('editPhotoInput').click();
-    }
-
-    async function handleEditPhotoReplace(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            const base64 = e.target.result;
-            editCurrentPhotoUrl = base64;
-            // 立即更新预览
-            const preview = document.getElementById('editPhotoPreview');
-            preview.src = base64;
-            preview.style.display = 'block';
-            document.getElementById('editNoPhotoText').style.display = 'none';
-        };
-        reader.readAsDataURL(file);
-    }
-
-    async function deleteEditPhoto() {
-        if (!confirm('确定要删除当前照片吗？')) return;
-        editCurrentPhotoUrl = null;
-        const preview = document.getElementById('editPhotoPreview');
-        preview.style.display = 'none';
-        document.getElementById('editNoPhotoText').style.display = 'block';
-    }
-
-    async function saveEdit() {
-        const name = document.getElementById('editName').value.trim();
-        if (!name) {
-            document.getElementById('editErrorMsg').textContent = '姓名不能为空';
-            document.getElementById('editErrorMsg').style.display = 'block';
-            return;
-        }
-
-        const member = allMembers.find(m => m.id === editMemberId);
-        if (!member) return;
-
-        if (editType === 'member') {
-            if (!editSelectedGender) {
-                document.getElementById('editErrorMsg').textContent = '请选择性别';
-                document.getElementById('editErrorMsg').style.display = 'block';
-                return;
-            }
-            const { error } = await supabase
-                .from('family_members')
-                .update({
-                    name: name,
-                    gender: editSelectedGender,
-                    photo_url: editCurrentPhotoUrl // 可能是 null 或 base64
-                })
-                .eq('id', editMemberId);
-            if (error) {
-                alert('修改失败：' + error.message);
-                return;
-            }
-        } else {
-            const { error } = await supabase
-                .from('family_members')
-                .update({
-                    spouse_name: name,
-                    spouse_photo_url: editCurrentPhotoUrl
-                })
-                .eq('id', editMemberId);
-            if (error) {
-                alert('修改配偶失败：' + error.message);
-                return;
-            }
-        }
-
-        closeEditModal();
-        await loadTreeData();
-    }
-
-    // ==================== 添加成员模态框（原有的） ====================
-    function setGender(gender, btn) {
-        selectedGender = gender;
-        document.querySelectorAll('#addModal .gender-select button').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-    }
-
-    const modal = document.getElementById('addModal');
-    const modalTitle = document.getElementById('modalTitle');
-    const genderGroup = document.getElementById('genderGroup');
-    const errorMsg = document.getElementById('errorMsg');
-
-    function openModal(nodeId, mode) {
-        currentNodeId = nodeId;
-        currentMode = mode;
-        selectedGender = null;
-        if (mode === 'child') {
-            modalTitle.textContent = '添加后代';
-            genderGroup.style.display = 'block';
-            document.querySelectorAll('#addModal .gender-select button').forEach(b => b.classList.remove('active'));
-        } else {
-            modalTitle.textContent = '添加配偶';
-            genderGroup.style.display = 'none';
-        }
-        errorMsg.style.display = 'none';
-        modal.classList.add('active');
-    }
-
-    function closeModal() {
-        modal.classList.remove('active');
-        document.getElementById('newName').value = '';
-        document.getElementById('newPhoto').value = '';
-        currentNodeId = null;
-    }
-
-    function fileToBase64(file) {
-        return new Promise((resolve) => {
-            if (!file) return resolve(null);
-            const reader = new FileReader();
-            reader.onload = (e) => resolve(e.target.result);
-            reader.readAsDataURL(file);
-        });
-    }
-
-    async function submitForm() {
-        const name = document.getElementById('newName').value.trim();
-        if (!name) {
-            showError('请输入姓名');
-            return;
-        }
-        if (currentMode === 'child' && !selectedGender) {
-            showError('请选择性别');
-            return;
-        }
-
-        const photoFile = document.getElementById('newPhoto').files[0];
-        let photoUrl = null;
-        if (photoFile) {
-            photoUrl = await fileToBase64(photoFile);
-        }
-
-        if (currentMode === 'child') {
-            const { error } = await supabase.from('family_members').insert({
-                parent_id: currentNodeId,
-                name: name,
-                photo_url: photoUrl || null,
-                gender: selectedGender,
-                spouse_name: null,
-                spouse_photo_url: null
-            });
-            if (error) {
-                showError('添加失败：' + error.message);
-                return;
-            }
-        } else if (currentMode === 'spouse') {
-            const { error } = await supabase
-                .from('family_members')
-                .update({
-                    spouse_name: name,
-                    spouse_photo_url: photoUrl || null
-                })
-                .eq('id', currentNodeId);
-            if (error) {
-                showError('添加配偶失败：' + error.message);
-                return;
-            }
-        }
-
-        closeModal();
-        await loadTreeData();
-    }
-
-    function showError(msg) {
-        errorMsg.textContent = msg;
-        errorMsg.style.display = 'block';
-    }
-
-    // ==================== 数据加载与渲染 ====================
-    async function loadTreeData() {
-        showLoading(true);
-        const { data, error } = await supabase
-            .from('family_members')
-            .select('*')
-            .order('created_at', { ascending: true });
-        if (error) {
-            console.error('加载失败:', error);
-            alert('无法连接到数据库，请刷新重试。');
-            showLoading(false);
-            return;
-        }
-        allMembers = data || [];
-        renderTree();
-        showLoading(false);
-    }
-
-    function getMemberTitle(member) {
-        if (member.parent_id === null) return '';
-        const siblings = allMembers.filter(m => m.parent_id === member.parent_id);
-        siblings.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-        const index = siblings.findIndex(s => s.id === member.id);
-        if (index === -1) return '';
-        const orderList = ['一', '二', '三', '四', '五'];
-        const orderStr = orderList[index] || `${index + 1}`;
-        const genderChar = member.gender === 'male' ? '子' : '女';
-        return `${orderStr}${genderChar}：`;
-    }
-
-    function buildFamilyNodeDOM(member) {
-        const nodeDiv = document.createElement('div');
-        nodeDiv.className = 'family-node';
-
-        // 主成员卡片
-        const mainPerson = document.createElement('div');
-        mainPerson.className = 'person';
-        mainPerson.setAttribute('data-id', member.id);
-        mainPerson.setAttribute('data-type', 'member');
-        const photo = member.photo_url || DEFAULT_PHOTO;
-        const titlePrefix = getMemberTitle(member);
-        const displayName = titlePrefix + member.name;
-        mainPerson.innerHTML = `
-            <img src="${photo}" alt="${member.name}" onerror="this.src='${DEFAULT_PHOTO}'">
-            <span class="name">${displayName}</span>
-            <div class="action-btns">
-                <div class="add-btn" onclick="event.stopPropagation(); openModal(${member.id}, 'child')" title="添加子嗣">+</div>
-                <div class="spouse-btn" onclick="event.stopPropagation(); openModal(${member.id}, 'spouse')" title="添加配偶">💑</div>
+    <!-- 添加成员模态框 -->
+    <div class="modal-overlay" id="addModal">
+        <div class="modal">
+            <h2 id="modalTitle">添加成员</h2>
+            <div class="form-group">
+                <label>姓名</label>
+                <input type="text" id="newName" placeholder="请输入姓名">
             </div>
-        `;
+            <div class="form-group" id="genderGroup" style="display:none;">
+                <label>性别</label>
+                <div class="gender-select">
+                    <button type="button" id="genderMale" onclick="setGender('male', this)">男</button>
+                    <button type="button" id="genderFemale" onclick="setGender('female', this)">女</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>上传照片</label>
+                <input type="file" id="newPhoto" accept="image/*">
+            </div>
+            <div class="modal-btns">
+                <button class="btn btn-cancel" onclick="closeModal()">取消</button>
+                <button class="btn btn-submit" onclick="submitForm()">确认添加</button>
+            </div>
+            <p class="error-text" id="errorMsg"></p>
+        </div>
+    </div>
 
-        // 按下记录时间
-        mainPerson.addEventListener('mousedown', (e) => {
-            mainPerson.setAttribute('data-press-start', Date.now());
-            startLongPress(member.id, mainPerson, 'member');
-        });
-        mainPerson.addEventListener('touchstart', (e) => {
-            mainPerson.setAttribute('data-press-start', Date.now());
-            startLongPress(member.id, mainPerson, 'member');
-        }, {passive: true});
+    <!-- 编辑成员模态框 -->
+    <div class="modal-overlay" id="editModal">
+        <div class="modal">
+            <h2 id="editModalTitle">编辑资料</h2>
+            <div class="form-group">
+                <label>姓名</label>
+                <input type="text" id="editName" placeholder="请输入姓名">
+            </div>
+            <div class="form-group" id="editGenderGroup" style="display:none;">
+                <label>性别</label>
+                <div class="gender-select">
+                    <button type="button" id="editGenderMale" onclick="setEditGender('male', this)">男</button>
+                    <button type="button" id="editGenderFemale" onclick="setEditGender('female', this)">女</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>照片</label>
+                <div id="editPhotoContainer">
+                    <img id="editPhotoPreview" class="photo-preview" src="" alt="照片" style="display:none;">
+                    <p id="editNoPhotoText" style="color:#999;">暂无照片</p>
+                </div>
+                <div class="photo-actions" id="editPhotoActions">
+                    <button class="btn btn-submit" onclick="triggerEditPhotoUpload()">上传/替换照片</button>
+                    <button class="btn btn-cancel" style="background:#c0392b;color:white;" onclick="deleteEditPhoto()">删除照片</button>
+                </div>
+                <input type="file" id="editPhotoInput" accept="image/*" style="display:none;" onchange="handleEditPhotoReplace(event)">
+            </div>
+            <div class="modal-btns">
+                <button class="btn btn-cancel" onclick="closeEditModal()">取消</button>
+                <button class="btn btn-submit" onclick="saveEdit()">保存修改</button>
+            </div>
+            <p class="error-text" id="editErrorMsg"></p>
+        </div>
+    </div>
 
-        // 点击：短按编辑，长按忽略
-        mainPerson.addEventListener('click', (e) => {
-            if (e.target.closest('.add-btn') || e.target.closest('.spouse-btn') || e.target.closest('.delete-btn')) return;
-            const pressStart = parseInt(mainPerson.getAttribute('data-press-start') || '0');
-            if (pressStart && Date.now() - pressStart > 250) {
-                clearLongPress();
-                mainPerson.setAttribute('data-press-start', '0');
-                return;
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
+    <script>
+        (function() {
+
+            // ==================== 配置 ====================
+            const SUPABASE_URL = 'https://yihrrkvridiyfdiabkob.supabase.co';
+            const SUPABASE_ANON_KEY = 'sb_publishable_bra_sHf-dNI1DPaLo03WSw_s-KafG2-';
+            const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+            const DEFAULT_PHOTO = 'default-avatar.png';
+
+            // ==================== 全局状态 ====================
+            let currentNodeId = null;
+            let currentMode = 'child';
+            let selectedGender = null;
+            let allMembers = [];
+
+            // 编辑状态
+            let editMemberId = null;
+            let editType = 'member';
+            let editSelectedGender = null;
+            let editCurrentPhotoUrl = null;
+
+            // 删除状态
+            let currentDeleteId = null;
+            let currentDeleteType = 'member';
+
+            // ==================== 辅助函数 ====================
+            function fileToBase64(file) {
+                return new Promise((resolve) => {
+                    if (!file) return resolve(null);
+                    const reader = new FileReader();
+                    reader.onload = (e) => resolve(e.target.result);
+                    reader.readAsDataURL(file);
+                });
             }
-            openEditModal(member.id, 'member');
-        });
 
-        mainPerson.addEventListener('mouseup', clearLongPress);
-        mainPerson.addEventListener('mouseleave', clearLongPress);
-        mainPerson.addEventListener('touchend', clearLongPress);
-        mainPerson.addEventListener('touchmove', clearLongPress);
+            function showLoading(show) {
+                const el = document.getElementById('loadingIndicator');
+                if (el) el.style.display = show ? 'block' : 'none';
+            }
 
-        nodeDiv.appendChild(mainPerson);
+            function hideAllDeleteButtons() {
+                document.querySelectorAll('.delete-btn').forEach(b => b.classList.remove('show'));
+            }
 
-        // 配偶卡片
-        if (member.spouse_name) {
-            const spouseCard = document.createElement('div');
-            spouseCard.className = 'person spouse-person';
-            spouseCard.setAttribute('data-id', member.id);
-            spouseCard.setAttribute('data-type', 'spouse');
-            const spousePhoto = member.spouse_photo_url || DEFAULT_PHOTO;
-            spouseCard.innerHTML = `
-                <img src="${spousePhoto}" alt="${member.spouse_name}" onerror="this.src='${DEFAULT_PHOTO}'">
-                <span class="name">配偶：${member.spouse_name}</span>
-            `;
+            // ==================== 删除逻辑 ====================
+            function triggerDelete(id, type) {
+                currentDeleteId = id;
+                currentDeleteType = type;
 
-            spouseCard.addEventListener('mousedown', (e) => {
-                spouseCard.setAttribute('data-press-start', Date.now());
-                startLongPress(member.id, spouseCard, 'spouse');
-            });
-            spouseCard.addEventListener('touchstart', (e) => {
-                spouseCard.setAttribute('data-press-start', Date.now());
-                startLongPress(member.id, spouseCard, 'spouse');
-            }, {passive: true});
+                // 获取对应的卡片
+                const selector = type === 'member'
+                    ? `.person[data-id="${id}"][data-type="member"]`
+                    : `.person[data-id="${id}"][data-type="spouse"]`;
+                const card = document.querySelector(selector);
+                if (!card) return;
 
-            spouseCard.addEventListener('click', (e) => {
-                if (e.target.closest('.delete-btn')) return;
-                const pressStart = parseInt(spouseCard.getAttribute('data-press-start') || '0');
-                if (pressStart && Date.now() - pressStart > 250) {
-                    clearLongPress();
-                    spouseCard.setAttribute('data-press-start', '0');
+                // 祖先免死金牌
+                const member = allMembers.find(m => m.id === id);
+                if (type === 'member' && member && member.parent_id === null) return;
+
+                // 显示删除按钮
+                hideAllDeleteButtons();
+                let btn = card.querySelector('.delete-btn');
+                if (!btn) {
+                    btn = document.createElement('div');
+                    btn.className = 'delete-btn';
+                    btn.innerHTML = '✕';
+                    btn.setAttribute('data-delete-id', id);
+                    btn.setAttribute('data-delete-type', type);
+                    card.appendChild(btn);
+                }
+
+                // 直接绑定事件
+                btn.onclick = function(e) {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    handleDeleteClick(id, type);
+                    return false;
+                };
+
+                btn.classList.add('show');
+
+                // 5秒后自动隐藏
+                setTimeout(() => {
+                    if (btn && btn.getAttribute('data-delete-id') == id) {
+                        btn.classList.remove('show');
+                    }
+                }, 5000);
+            }
+
+            function handleDeleteClick(id, type) {
+                if (type === 'member') {
+                    if (confirm('确定要删除该成员及其所有后代吗？此操作不可恢复。')) {
+                        deleteMember(id);
+                    }
+                } else {
+                    if (confirm('确定要删除该配偶吗？')) {
+                        clearSpouse(id);
+                    }
+                }
+                hideAllDeleteButtons();
+            }
+
+            async function clearSpouse(memberId) {
+                const { error } = await supabase
+                    .from('family_members')
+                    .update({ spouse_name: null, spouse_photo_url: null })
+                    .eq('id', memberId);
+                if (error) {
+                    alert('删除配偶失败：' + error.message);
+                } else {
+                    await loadTreeData();
+                }
+            }
+
+            async function deleteMember(memberId) {
+                const member = allMembers.find(m => m.id === memberId);
+                if (member && member.parent_id === null) {
+                    alert('祖先节点不可删除');
                     return;
                 }
-                openEditModal(member.id, 'spouse');
+
+                function getDescendantIds(pid) {
+                    let ids = [];
+                    const children = allMembers.filter(m => m.parent_id === pid);
+                    children.forEach(c => {
+                        ids.push(c.id);
+                        ids = ids.concat(getDescendantIds(c.id));
+                    });
+                    return ids;
+                }
+
+                const idsToDelete = [memberId, ...getDescendantIds(memberId)];
+                const { error } = await supabase
+                    .from('family_members')
+                    .delete()
+                    .in('id', idsToDelete);
+                if (error) {
+                    alert('删除失败：' + error.message);
+                } else {
+                    await loadTreeData();
+                }
+            }
+
+            // 全局隐藏删除按钮
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.delete-btn') && !e.target.closest('.person')) {
+                    hideAllDeleteButtons();
+                }
             });
 
-            spouseCard.addEventListener('mouseup', clearLongPress);
-            spouseCard.addEventListener('mouseleave', clearLongPress);
-            spouseCard.addEventListener('touchend', clearLongPress);
-            spouseCard.addEventListener('touchmove', clearLongPress);
+            // ==================== 编辑模态框 ====================
+            function openEditModal(memberId, type) {
+                const member = allMembers.find(m => m.id === memberId);
+                if (!member) return;
 
-            nodeDiv.appendChild(spouseCard);
-        }
+                editMemberId = memberId;
+                editType = type;
 
-        return nodeDiv;
-    }
+                document.getElementById('editErrorMsg').style.display = 'none';
+                const title = document.getElementById('editModalTitle');
+                const nameInput = document.getElementById('editName');
+                const genderGroup = document.getElementById('editGenderGroup');
+                const photoPreview = document.getElementById('editPhotoPreview');
+                const noPhotoText = document.getElementById('editNoPhotoText');
 
-    function renderTree() {
-        const treeContainer = document.getElementById('familyTree');
-        treeContainer.innerHTML = '';
+                if (type === 'member') {
+                    title.textContent = '编辑成员';
+                    nameInput.value = member.name || '';
+                    genderGroup.style.display = 'block';
+                    editSelectedGender = member.gender || null;
+                    document.querySelectorAll('#editGenderGroup .gender-select button').forEach(b => b.classList.remove('active'));
+                    if (member.gender === 'male') document.getElementById('editGenderMale').classList.add('active');
+                    if (member.gender === 'female') document.getElementById('editGenderFemale').classList.add('active');
+                    editCurrentPhotoUrl = member.photo_url || null;
+                } else {
+                    title.textContent = '编辑配偶';
+                    nameInput.value = member.spouse_name || '';
+                    genderGroup.style.display = 'none';
+                    editSelectedGender = null;
+                    editCurrentPhotoUrl = member.spouse_photo_url || null;
+                }
 
-        const roots = allMembers.filter(m => m.parent_id === null);
-        if (roots.length === 0) {
-            treeContainer.innerHTML = '<p style="text-align:center;color:#999;">族谱数据为空</p>';
-            return;
-        }
+                if (editCurrentPhotoUrl && editCurrentPhotoUrl !== DEFAULT_PHOTO) {
+                    photoPreview.src = editCurrentPhotoUrl;
+                    photoPreview.style.display = 'block';
+                    noPhotoText.style.display = 'none';
+                } else {
+                    photoPreview.style.display = 'none';
+                    noPhotoText.style.display = 'block';
+                }
 
-        const rootUl = document.createElement('ul');
-        roots.forEach(root => {
-            rootUl.appendChild(buildNodeDOM(root));
-        });
-        treeContainer.appendChild(rootUl);
-    }
+                document.getElementById('editModal').classList.add('active');
+            }
 
-    function buildNodeDOM(member) {
-        const li = document.createElement('li');
-        li.appendChild(buildFamilyNodeDOM(member));
-        const children = allMembers.filter(m => m.parent_id === member.id);
-        if (children.length > 0) {
-            const childUl = document.createElement('ul');
-            children.forEach(child => {
-                childUl.appendChild(buildNodeDOM(child));
-            });
-            li.appendChild(childUl);
-        }
-        return li;
-    }
+            function closeEditModal() {
+                document.getElementById('editModal').classList.remove('active');
+                editMemberId = null;
+            }
 
-    function showLoading(show) {
-        document.getElementById('loadingIndicator').style.display = show ? 'block' : 'none';
-    }
+            function setEditGender(gender, btn) {
+                editSelectedGender = gender;
+                document.querySelectorAll('#editGenderGroup .gender-select button').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            }
 
-    // ==================== 删除成员 ====================
-    async function deleteMember(memberId) {
-        const member = allMembers.find(m => m.id === memberId);
-        if (member && member.parent_id === null) {
-            alert('祖先节点不可删除');
-            return;
-        }
-        function getDescendantIds(pid) {
-            let ids = [];
-            const children = allMembers.filter(m => m.parent_id === pid);
-            children.forEach(c => {
-                ids.push(c.id);
-                ids = ids.concat(getDescendantIds(c.id));
-            });
-            return ids;
-        }
-        const idsToDelete = [memberId, ...getDescendantIds(memberId)];
-        const { error } = await supabase
-            .from('family_members')
-            .delete()
-            .in('id', idsToDelete);
-        if (error) {
-            alert('删除失败：' + error.message);
-        } else {
-            await loadTreeData();
-        }
-    }
+            function triggerEditPhotoUpload() {
+                document.getElementById('editPhotoInput').click();
+            }
 
-    window.addEventListener('DOMContentLoaded', loadTreeData);
-</script>
+            async function handleEditPhotoReplace(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+                const base64 = await fileToBase64(file);
+                editCurrentPhotoUrl = base64;
+                const preview = document.getElementById('editPhotoPreview');
+                preview.src = base64;
+                preview.style.display = 'block';
+                document.getElementById('editNoPhotoText').style.display = 'none';
+            }
+
+            function deleteEditPhoto() {
+                if (!confirm('确定要删除当前照片吗？')) return;
+                editCurrentPhotoUrl = null;
+                document.getElementById('editPhotoPreview').style.display = 'none';
+                document.getElementById('editNoPhotoText').style.display = 'block';
+            }
+
+            async function saveEdit() {
+                const name = document.getElementById('editName').value.trim();
+                if (!name) {
+                    document.getElementById('editErrorMsg').textContent = '姓名不能为空';
+                    document.getElementById('editErrorMsg').style.display = 'block';
+                    return;
+                }
+
+                if (editType === 'member' && !editSelectedGender) {
+                    document.getElementById('editErrorMsg').textContent = '请选择性别';
+                    document.getElementById('editErrorMsg').style.display = 'block';
+                    return;
+                }
+
+                if (editType === 'member') {
+                    const { error } = await supabase
+                        .from('family_members')
+                        .update({
+                            name: name,
+                            gender: editSelectedGender,
+                            photo_url: editCurrentPhotoUrl
+                        })
+                        .eq('id', editMemberId);
+                    if (error) { alert('修改失败：' + error.message); return; }
+                } else {
+                    const { error } = await supabase
+                        .from('family_members')
+                        .update({
+                            spouse_name: name,
+                            spouse_photo_url: editCurrentPhotoUrl
+                        })
+                        .eq('id', editMemberId);
+                    if (error) { alert('修改配偶失败：' + error.message); return; }
+                }
+
+                closeEditModal();
+                await loadTreeData();
+            }
+
+            // ==================== 添加成员模态框 ====================
+            function setGender(gender, btn) {
+                selectedGender = gender;
+                document.querySelectorAll('#addModal .gender-select button').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            }
+
+            function openModal(nodeId, mode) {
+                currentNodeId = nodeId;
+                currentMode = mode;
+                selectedGender = null;
+                if (mode === 'child') {
+                    document.getElementById('modalTitle').textContent = '添加后代';
+                    document.getElementById('genderGroup').style.display = 'block';
+                    document.querySelectorAll('#addModal .gender-select button').forEach(b => b.classList.remove('active'));
+                } else {
+                    document.getElementById('modalTitle').textContent = '添加配偶';
+                    document.getElementById('genderGroup').style.display = 'none';
+                }
+                document.getElementById('errorMsg').style.display = 'none';
+                document.getElementById('addModal').classList.add('active');
+            }
+
+            function closeModal() {
+                document.getElementById('addModal').classList.remove('active');
+                document.getElementById('newName').value = '';
+                document.getElementById('newPhoto').value = '';
+                currentNodeId = null;
+            }
+
+            async function submitForm() {
+                const name = document.getElementById('newName').value.trim();
+                if (!name) {
+                    document.getElementById('errorMsg').textContent = '请输入姓名';
+                    document.getElementById('errorMsg').style.display = 'block';
+                    return;
+                }
+                if (currentMode === 'child' && !selectedGender) {
+                    document.getElementById('errorMsg').textContent = '请选择性别';
+                    document.getElementById('errorMsg').style.display = 'block';
+                    return;
+                }
+
+                const photoFile = document.getElementById('newPhoto').files[0];
+                let photoUrl = null;
+                if (photoFile) photoUrl = await fileToBase64(photoFile);
+
+                if (currentMode === 'child') {
+                    const { error } = await supabase.from('family_members').insert({
+                        parent_id: currentNodeId,
+                        name: name,
+                        photo_url: photoUrl || null,
+                        gender: selectedGender,
+                        spouse_name: null,
+                        spouse_photo_url: null
+                    });
+                    if (error) { alert('添加失败：' + error.message); return; }
+                } else {
+                    const { error } = await supabase
+                        .from('family_members')
+                        .update({
+                            spouse_name: name,
+                            spouse_photo_url: photoUrl || null
+                        })
+                        .eq('id', currentNodeId);
+                    if (error) { alert('添加配偶失败：' + error.message); return; }
+                }
+
+                closeModal();
+                await loadTreeData();
+            }
+
+            // ==================== 数据加载与渲染 ====================
+            async function loadTreeData() {
+                showLoading(true);
+                const { data, error } = await supabase
+                    .from('family_members')
+                    .select('*')
+                    .order('created_at', { ascending: true });
+                if (error) {
+                    console.error('加载失败:', error);
+                    alert('无法连接到数据库');
+                    showLoading(false);
+                    return;
+                }
+                allMembers = data || [];
+                renderTree();
+                showLoading(false);
+            }
+
+            function getMemberTitle(member) {
+                if (member.parent_id === null) return '';
+                const siblings = allMembers.filter(m => m.parent_id === member.parent_id);
+                siblings.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+                const index = siblings.findIndex(s => s.id === member.id);
+                if (index === -1) return '';
+                const orderList = ['一', '二', '三', '四', '五'];
+                const orderStr = orderList[index] || `${index + 1}`;
+                const genderChar = member.gender === 'male' ? '子' : '女';
+                return `${orderStr}${genderChar}：`;
+            }
+
+            function buildFamilyNodeDOM(member) {
+                const nodeDiv = document.createElement('div');
+                nodeDiv.className = 'family-node';
+
+                // ---- 主成员卡片 ----
+                const mainCard = document.createElement('div');
+                mainCard.className = 'person';
+                mainCard.setAttribute('data-id', member.id);
+                mainCard.setAttribute('data-type', 'member');
+                const photo = member.photo_url || DEFAULT_PHOTO;
+                const titlePrefix = getMemberTitle(member);
+                const displayName = titlePrefix + member.name;
+                mainCard.innerHTML = `
+                    <img src="${photo}" alt="${member.name}" onerror="this.src='${DEFAULT_PHOTO}'">
+                    <span class="name">${displayName}</span>
+                    <div class="action-btns">
+                        <div class="add-btn" data-action="add-child">+</div>
+                        <div class="spouse-btn" data-action="add-spouse">💑</div>
+                    </div>
+                `;
+
+                // 按钮事件委托
+                mainCard.querySelector('.add-btn').onclick = function(e) {
+                    e.stopPropagation();
+                    openModal(member.id, 'child');
+                };
+                mainCard.querySelector('.spouse-btn').onclick = function(e) {
+                    e.stopPropagation();
+                    openModal(member.id, 'spouse');
+                };
+
+                // 长按事件 (contextmenu)
+                mainCard.addEventListener('contextmenu', function(e) {
+                    e.preventDefault();
+                    triggerDelete(member.id, 'member');
+                });
+
+                // 单击打开编辑
+                mainCard.addEventListener('click', function(e) {
+                    if (e.target.closest('.add-btn') || e.target.closest('.spouse-btn') || e.target.closest('.delete-btn')) return;
+                    openEditModal(member.id, 'member');
+                });
+
+                nodeDiv.appendChild(mainCard);
+
+                // ---- 配偶卡片 ----
+                if (member.spouse_name) {
+                    const spouseCard = document.createElement('div');
+                    spouseCard.className = 'person spouse-person';
+                    spouseCard.setAttribute('data-id', member.id);
+                    spouseCard.setAttribute('data-type', 'spouse');
+                    const spousePhoto = member.spouse_photo_url || DEFAULT_PHOTO;
+                    spouseCard.innerHTML = `
+                        <img src="${spousePhoto}" alt="${member.spouse_name}" onerror="this.src='${DEFAULT_PHOTO}'">
+                        <span class="name">配偶：${member.spouse_name}</span>
+                    `;
+
+                    spouseCard.addEventListener('contextmenu', function(e) {
+                        e.preventDefault();
+                        triggerDelete(member.id, 'spouse');
+                    });
+
+                    spouseCard.addEventListener('click', function(e) {
+                        if (e.target.closest('.delete-btn')) return;
+                        openEditModal(member.id, 'spouse');
+                    });
+
+                    nodeDiv.appendChild(spouseCard);
+                }
+
+                return nodeDiv;
+            }
+
+            function renderTree() {
+                const treeContainer = document.getElementById('familyTree');
+                treeContainer.innerHTML = '';
+
+                const roots = allMembers.filter(m => m.parent_id === null);
+                if (roots.length === 0) {
+                    treeContainer.innerHTML = '<p style="text-align:center;color:#999;">族谱数据为空</p>';
+                    return;
+                }
+
+                const rootUl = document.createElement('ul');
+                roots.forEach(root => rootUl.appendChild(buildNodeDOM(root)));
+                treeContainer.appendChild(rootUl);
+            }
+
+            function buildNodeDOM(member) {
+                const li = document.createElement('li');
+                li.appendChild(buildFamilyNodeDOM(member));
+                const children = allMembers.filter(m => m.parent_id === member.id);
+                if (children.length > 0) {
+                    const childUl = document.createElement('ul');
+                    children.forEach(child => childUl.appendChild(buildNodeDOM(child)));
+                    li.appendChild(childUl);
+                }
+                return li;
+            }
+
+            // ==================== 启动 ====================
+            window.addEventListener('DOMContentLoaded', loadTreeData);
+
+            // 暴露必要函数到全局
+            window.openModal = openModal;
+            window.closeModal = closeModal;
+            window.submitForm = submitForm;
+            window.setGender = setGender;
+            window.closeEditModal = closeEditModal;
+            window.saveEdit = saveEdit;
+            window.setEditGender = setEditGender;
+            window.triggerEditPhotoUpload = triggerEditPhotoUpload;
+            window.handleEditPhotoReplace = handleEditPhotoReplace;
+            window.deleteEditPhoto = deleteEditPhoto;
+
+        })();
+    </script>
 </body>
 </html>
